@@ -21,3 +21,11 @@ function scalar_flux_operator(basis, quad1, quad2, normals, scaleareas)
     end
     return matrix
 end
+
+function assemble_face_scalar_flux_operator!(sysmatrix,basis,quad1,quad2,normals,)
+
+end
+
+################################################################################
+
+################################################################################

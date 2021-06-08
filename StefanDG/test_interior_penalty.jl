@@ -14,12 +14,6 @@ function source_term(v, k)
     return -8pi^2 * k * cos(2pi * x) * sin(2pi * y)
 end
 
-nelmts = 16
-solverorder = 3
-levelsetorder = 1
-distancefunction(x) = plane_distance_function(x, [1.0, 0.0], [0.5, 0.0])
-
-
 function measure_error(
     nelmts,
     solverorder,
@@ -122,7 +116,7 @@ err = [
 ]
 
 dx = 1.0 ./ nelmts
-rate = convergence_rate(dx,err)
+rate1 = convergence_rate(dx,err)
 ################################################################################
 
 
@@ -134,7 +128,8 @@ solverorder = 2
 levelsetorder = 1
 k1 = k2 = 1.0
 penaltyfactor = 1e3
-distancefunction(x) = plane_distance_function(x, [1.0, 0.0], [0.5, 0.0])
+# distancefunction(x) = plane_distance_function(x, [1.0, 0.0], [0.5, 0.0])
+distancefunction(x) = circle_distance_function(x,[0.5,0.5],0.25)
 
 err = [
     measure_error(
@@ -151,5 +146,5 @@ err = [
 ]
 
 dx = 1.0 ./ nelmts
-rate = convergence_rate(dx,err)
+rate2 = convergence_rate(dx,err)
 ################################################################################

@@ -2,7 +2,7 @@ using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
 include("local_DG.jl")
-include("useful_routines.jl")
+include("../useful_routines.jl")
 
 
 solverorder = 1
@@ -62,6 +62,7 @@ LocalDG.assemble_gradient_operator!(
     k2,
     mergedmesh,
 )
+
 LocalDG.assemble_interelement_scalar_flux_operator!(
     sysmatrix,
     solverbasis,
@@ -69,6 +70,17 @@ LocalDG.assemble_interelement_scalar_flux_operator!(
     beta,
     mergedmesh,
 )
+LocalDG.assemble_interelement_vector_flux_operator!(
+    sysmatrix,
+    solverbasis,
+    facequads,
+    k1,
+    k2,
+    penaltyfactor,
+    beta,
+    mergedmesh,
+)
+
 LocalDG.assemble_interface_scalar_flux_operator!(
     sysmatrix,
     solverbasis,
@@ -76,3 +88,15 @@ LocalDG.assemble_interface_scalar_flux_operator!(
     beta,
     mergedmesh,
 )
+LocalDG.assemble_interface_vector_flux_operator!(
+    sysmatrix,
+    solverbasis,
+    interfacequads,
+    k1,
+    k2,
+    penaltyfactor,
+    beta,
+    mergedmesh,
+)
+
+matrix = CutCellDG.sparse_operator(sysmatrix,mergedmesh,3)

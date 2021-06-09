@@ -2,7 +2,7 @@ using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
 include("interior_penalty.jl")
-include("useful_routines.jl")
+include("../useful_routines.jl")
 
 function exact_solution(v)
     x, y = v

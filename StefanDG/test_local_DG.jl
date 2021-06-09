@@ -8,7 +8,8 @@ include("useful_routines.jl")
 solverorder = 1
 levelsetorder = 1
 nelmts = 5
-penaltyfactor = 1e2
+penaltyfactor = 1.0
+beta = [1.0, 1.0]
 k1 = k2 = 1.0
 
 numqp = required_quadrature_order(solverorder)
@@ -27,7 +28,11 @@ cgmesh = CutCellDG.CGMesh(
     [nelmts, nelmts],
     number_of_basis_functions(levelsetbasis),
 )
-levelset = CutCellDG.LevelSet(x -> ones(size(x)[2]), cgmesh, levelsetbasis)
+levelset = CutCellDG.LevelSet(
+    x -> plane_distance_function(x, [1.0, 0.0], [0.5, 0.0]),
+    cgmesh,
+    levelsetbasis,
+)
 minelmtsize = minimum(CutCellDG.element_size(dgmesh))
 penalty = penaltyfactor / minelmtsize
 
@@ -42,9 +47,32 @@ mergedmesh =
 sysmatrix = CutCellDG.SystemMatrix()
 sysrhs = CutCellDG.SystemRHS()
 
-LocalDG.assemble_divergence_operator!(sysmatrix,solverbasis,cellquads,mergedmesh)
-LocalDG.assemble_mass_operator!(sysmatrix,solverbasis,cellquads,mergedmesh)
-LocalDG.assemble_gradient_operator!(sysmatrix,solverbasis,cellquads,k1,k2,mergedmesh)
-
-quad = tensor_product_quadrature(2,3)
-matrix = CutCellDG.mass_matrix(solverbasis,quad,2,1.)
+LocalDG.assemble_divergence_operator!(
+    sysmatrix,
+    solverbasis,
+    cellquads,
+    mergedmesh,
+)
+LocalDG.assemble_mass_operator!(sysmatrix, solverbasis, cellquads, mergedmesh)
+LocalDG.assemble_gradient_operator!(
+    sysmatrix,
+    solverbasis,
+    cellquads,
+    k1,
+    k2,
+    mergedmesh,
+)
+LocalDG.assemble_interelement_scalar_flux_operator!(
+    sysmatrix,
+    solverbasis,
+    facequads,
+    beta,
+    mergedmesh,
+)
+LocalDG.assemble_interface_scalar_flux_operator!(
+    sysmatrix,
+    solverbasis,
+    interfacequads,
+    beta,
+    mergedmesh,
+)

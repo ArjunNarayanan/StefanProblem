@@ -6,20 +6,24 @@ include("../useful_routines.jl")
 
 function exact_solution(v)
     x, y = v
-    return 3x + 4y
+    return cos(2pi * x) * sin(2pi * y)
 end
 
 function exact_gradient(v)
-    return [3.,4.]
+    x, y = v
+    gx = -2pi * sin(2pi * x) * sin(2pi * y)
+    gy = 2pi * cos(2pi * x) * cos(2pi * y)
+    return [gx, gy]
 end
 
 function source_term(v, k)
-    return 0.0
+    x, y = v
+    return -8pi^2 * k * cos(2pi * x) * sin(2pi * y)
 end
 
-solverorder = 2
+solverorder = 1
 levelsetorder = 1
-nelmts = 5
+nelmts = 17
 penaltyfactor = 1.0
 beta = [1.0, 1.0]
 k1 = k2 = 1.0
@@ -72,7 +76,7 @@ LocalDG.assemble_LDG_linear_system!(
 )
 LocalDG.assemble_LDG_rhs!(
     sysrhs,
-    x -> source_term(x, k1),
+    x -> -source_term(x, k1),
     exact_solution,
     solverbasis,
     cellquads,
@@ -88,5 +92,8 @@ sol = reshape(matrix \ rhs, 3, :)
 T = sol[1, :]'
 G = sol[2:3, :]
 
-errT = mesh_L2_error(T,exact_solution,solverbasis,cellquads,mergedmesh)
-errG = mesh_L2_error(G,exact_gradient,solverbasis,cellquads,mergedmesh)
+errT = mesh_L2_error(T, exact_solution, solverbasis, cellquads, mergedmesh)
+errG = mesh_L2_error(G, exact_gradient, solverbasis, cellquads, mergedmesh)
+
+println("Error T = $errT")
+println("Error G = $errG")

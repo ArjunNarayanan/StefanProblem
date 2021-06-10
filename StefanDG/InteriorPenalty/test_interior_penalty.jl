@@ -11,7 +11,7 @@ end
 
 function source_term(v, k)
     x, y = v
-    return -8pi^2 * k * cos(2pi * x) * sin(2pi * y)
+    return 8pi^2 * k * cos(2pi * x) * sin(2pi * y)
 end
 
 function measure_error(

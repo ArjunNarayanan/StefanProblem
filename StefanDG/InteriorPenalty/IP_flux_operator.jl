@@ -46,7 +46,7 @@ function assemble_face_flux_operator!(
     nodeids2,
 )
 
-    M11 = flux_operator(
+    M11 = -1.0flux_operator(
         basis,
         quad1,
         quad1,
@@ -55,7 +55,7 @@ function assemble_face_flux_operator!(
         jacobian,
         scaleareas,
     )
-    M12 = flux_operator(
+    M12 = -1.0flux_operator(
         basis,
         quad1,
         quad2,
@@ -64,7 +64,7 @@ function assemble_face_flux_operator!(
         jacobian,
         scaleareas,
     )
-    M21 = flux_operator(
+    M21 = -1.0flux_operator(
         basis,
         quad2,
         quad1,
@@ -73,7 +73,7 @@ function assemble_face_flux_operator!(
         jacobian,
         scaleareas,
     )
-    M22 = flux_operator(
+    M22 = -1.0flux_operator(
         basis,
         quad2,
         quad2,
@@ -378,7 +378,7 @@ function assemble_boundary_face_flux_operator!(
     normals = repeat(normal, inner = (1, numqp))
     scaleareas = repeat([facedetjac], numqp)
 
-    M = vec(
+    M = -1.0vec(
         transpose(
             flux_operator(
                 basis,

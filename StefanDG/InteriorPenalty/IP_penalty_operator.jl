@@ -29,10 +29,10 @@ function assemble_face_penalty_operator!(
     nodeids2,
 )
 
-    M11 = -1.0 * vec(penalty * mass_operator(basis, quad1, quad1, scaleareas))
-    M12 = -1.0 * vec(penalty * mass_operator(basis, quad1, quad2, scaleareas))
-    M21 = -1.0 * vec(penalty * mass_operator(basis, quad2, quad1, scaleareas))
-    M22 = -1.0 * vec(penalty * mass_operator(basis, quad2, quad2, scaleareas))
+    M11 = vec(penalty * mass_operator(basis, quad1, quad1, scaleareas))
+    M12 = vec(penalty * mass_operator(basis, quad1, quad2, scaleareas))
+    M21 = vec(penalty * mass_operator(basis, quad2, quad1, scaleareas))
+    M22 = vec(penalty * mass_operator(basis, quad2, quad2, scaleareas))
 
     CutCellDG.assemble_couple_cell_matrix!(
         sysmatrix,
@@ -248,7 +248,7 @@ function assemble_boundary_face_penalty_operator!(
     numqp = length(quad)
     scaleareas = repeat([facedetjac], numqp)
 
-    M = -1.0 * vec(penalty * mass_operator(basis, quad, quad, scaleareas))
+    M = vec(penalty * mass_operator(basis, quad, quad, scaleareas))
 
     CutCellDG.assemble_couple_cell_matrix!(sysmatrix, nodeids, nodeids, 1, M)
 end

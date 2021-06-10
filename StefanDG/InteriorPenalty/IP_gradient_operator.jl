@@ -21,8 +21,7 @@ function assemble_cut_cell_gradient_operator!(
     jac = CutCellDG.jacobian(mesh)
     detjac = CutCellDG.determinant_jacobian(mesh)
     quad = cellquads[cellsign, cellid]
-    cellmatrix =
-        -1.0 * vec(gradient_operator(basis, quad, conductivity, jac, detjac))
+    cellmatrix = vec(gradient_operator(basis, quad, conductivity, jac, detjac))
     nodeids = CutCellDG.nodal_connectivity(mesh, cellsign, cellid)
     CutCellDG.assemble_cell_matrix!(sysmatrix, nodeids, 1, cellmatrix)
 end

@@ -58,7 +58,6 @@ function assemble_boundary_face_source!(
 )
 
     rhs =
-        -1.0 *
         penalty *
         CutCellDG.linear_form(rhsfunc, basis, quad, cellmap, 1, facedetjac)
     CutCellDG.assemble_cell_rhs!(systemrhs, nodeids, 1, rhs)

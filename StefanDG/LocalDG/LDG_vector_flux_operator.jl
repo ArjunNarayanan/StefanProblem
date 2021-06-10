@@ -384,3 +384,139 @@ function assemble_interface_vector_flux_operator!(
     end
 end
 ################################################################################
+
+
+################################################################################
+function assemble_boundary_face_vector_flux_operator!(
+    sysmatrix,
+    basis,
+    quad,
+    normal,
+    conductivity,
+    alpha,
+    facedetjac,
+    nodeids,
+)
+
+    numqp = length(quad)
+
+    if numqp > 0
+        posnormals = repeat(normal, inner = (1, numqp))
+        negnormals = -posnormals
+        scaleareas = repeat([facedetjac], numqp)
+
+        M11 =
+            -conductivity *
+            vec(vector_flux_operator(basis, quad, quad, posnormals, scaleareas))
+        CutCellDG.assemble_couple_cell_matrix!(
+            sysmatrix,
+            nodeids,
+            [1],
+            nodeids,
+            [2, 3],
+            3,
+            M11,
+        )
+
+        nnp = vec(mapslices(sum, posnormals .* posnormals, dims = 1))
+        nnm = vec(mapslices(sum, negnormals .* posnormals, dims = 1))
+
+        N11 = alpha * vec(mass_operator(basis, quad, quad, 1, nnp .* scaleareas))
+        CutCellDG.assemble_couple_cell_matrix!(
+            sysmatrix,
+            nodeids,
+            [1],
+            nodeids,
+            [1],
+            3,
+            N11,
+        )
+    end
+end
+
+function assemble_boundary_cell_vector_flux_operator!(
+    sysmatrix,
+    basis,
+    facequads,
+    normals,
+    conductivity,
+    alpha,
+    mesh,
+    cellsign,
+    cellid,
+    faceids,
+    facedetjac,
+)
+    nodeids = CutCellDG.nodal_connectivity(mesh, cellsign, cellid)
+    for faceid in faceids
+        quad = facequads[cellsign, faceid, cellid]
+        nbrcellid = CutCellDG.cell_connectivity(mesh, faceid, cellid)
+
+        if nbrcellid == 0 # this is a boundary face
+            assemble_boundary_face_vector_flux_operator!(
+                sysmatrix,
+                basis,
+                quad,
+                normals[faceid],
+                conductivity,
+                alpha,
+                facedetjac[faceid],
+                nodeids,
+            )
+        end
+    end
+end
+
+function assemble_boundary_vector_flux_operator!(
+    sysmatrix,
+    basis,
+    facequads,
+    k1,
+    k2,
+    alpha,
+    mesh,
+)
+
+    ncells = CutCellDG.number_of_cells(mesh)
+    facedetjac = CutCellDG.face_determinant_jacobian(mesh)
+    nfaces = CutCellDG.number_of_faces_per_cell(facequads)
+    faceids = 1:nfaces
+    normals = CutCellDG.reference_face_normals()
+
+    for cellid = 1:ncells
+        cellsign = CutCellDG.cell_sign(mesh, cellid)
+        CutCellDG.check_cellsign(cellsign)
+
+        if cellsign == +1 || cellsign == 0
+            assemble_boundary_cell_vector_flux_operator!(
+                sysmatrix,
+                basis,
+                facequads,
+                normals,
+                k1,
+                alpha,
+                mesh,
+                +1,
+                cellid,
+                faceids,
+                facedetjac,
+            )
+        end
+        if cellsign == -1 || cellsign == 0
+            assemble_boundary_cell_vector_flux_operator!(
+                sysmatrix,
+                basis,
+                facequads,
+                normals,
+                k2,
+                alpha,
+                mesh,
+                -1,
+                cellid,
+                faceids,
+                facedetjac,
+            )
+        end
+    end
+end
+################################################################################

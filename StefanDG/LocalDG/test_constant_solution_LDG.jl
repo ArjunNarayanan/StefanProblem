@@ -5,7 +5,7 @@ include("local_DG.jl")
 include("../useful_routines.jl")
 
 
-solverorder = 1
+solverorder = 2
 levelsetorder = 1
 nelmts = 5
 penaltyfactor = 1.0
@@ -34,7 +34,6 @@ levelset = CutCellDG.LevelSet(
     levelsetbasis,
 )
 minelmtsize = minimum(CutCellDG.element_size(dgmesh))
-penalty = penaltyfactor / minelmtsize
 
 cutmesh = CutCellDG.CutMesh(dgmesh, levelset)
 cellquads = CutCellDG.CellQuadratures(cutmesh, levelset, numqp)
@@ -47,50 +46,11 @@ mergedmesh =
 sysmatrix = CutCellDG.SystemMatrix()
 sysrhs = CutCellDG.SystemRHS()
 
-LocalDG.assemble_divergence_operator!(
+LocalDG.assemble_LDG_linear_system!(
     sysmatrix,
     solverbasis,
     cellquads,
-    mergedmesh,
-)
-LocalDG.assemble_mass_operator!(sysmatrix, solverbasis, cellquads, mergedmesh)
-LocalDG.assemble_gradient_operator!(
-    sysmatrix,
-    solverbasis,
-    cellquads,
-    k1,
-    k2,
-    mergedmesh,
-)
-
-LocalDG.assemble_interelement_scalar_flux_operator!(
-    sysmatrix,
-    solverbasis,
     facequads,
-    beta,
-    mergedmesh,
-)
-LocalDG.assemble_interelement_vector_flux_operator!(
-    sysmatrix,
-    solverbasis,
-    facequads,
-    k1,
-    k2,
-    penaltyfactor,
-    beta,
-    mergedmesh,
-)
-
-LocalDG.assemble_interface_scalar_flux_operator!(
-    sysmatrix,
-    solverbasis,
-    interfacequads,
-    beta,
-    mergedmesh,
-)
-LocalDG.assemble_interface_vector_flux_operator!(
-    sysmatrix,
-    solverbasis,
     interfacequads,
     k1,
     k2,
@@ -98,5 +58,23 @@ LocalDG.assemble_interface_vector_flux_operator!(
     beta,
     mergedmesh,
 )
+LocalDG.assemble_LDG_rhs!(
+    sysrhs,
+    x -> 0.0,
+    x -> 1.0,
+    solverbasis,
+    cellquads,
+    facequads,
+    penaltyfactor,
+    mergedmesh,
+)
 
-matrix = CutCellDG.sparse_operator(sysmatrix,mergedmesh,3)
+matrix = CutCellDG.sparse_operator(sysmatrix, mergedmesh, 3)
+rhs = CutCellDG.rhs_vector(sysrhs, mergedmesh, 3)
+
+sol = reshape(matrix \ rhs, 3, :)
+T = sol[1, :]'
+G = sol[2:3, :]
+
+errT = mesh_L2_error(T, x -> 1.0, solverbasis, cellquads, mergedmesh)
+errG = mesh_L2_error(G, x -> [0.0, 0.0], solverbasis, cellquads, mergedmesh)

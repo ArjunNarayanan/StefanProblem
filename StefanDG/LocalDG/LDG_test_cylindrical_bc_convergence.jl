@@ -2,23 +2,40 @@ using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
 include("local_DG.jl")
+include("../cylinder-analytical-solution.jl")
 include("../useful_routines.jl")
 
-function exact_solution(v)
-    x, y = v
-    return cos(2pi * x) * sin(2pi * y)
+function assemble_source_on_negative_mesh!(
+    systemrhs,
+    rhsfunc,
+    basis,
+    cellquads,
+    mesh,
+)
+
+    ncells = CutCellDG.number_of_cells(mesh)
+    for cellid = 1:ncells
+        cellsign = CutCellDG.cell_sign(mesh, cellid)
+        CutCellDG.check_cellsign(cellsign)
+
+        if cellsign == -1 || cellsign == 0
+            LocalDG.assemble_cell_source!(
+                systemrhs,
+                rhsfunc,
+                basis,
+                cellquads,
+                mesh,
+                -1,
+                cellid,
+            )
+        end
+    end
 end
 
-function exact_gradient(v)
-    x, y = v
-    gx = -2pi * sin(2pi * x) * sin(2pi * y)
-    gy = 2pi * cos(2pi * x) * cos(2pi * y)
-    return [gx, gy]
-end
-
-function source_term(v, k)
-    x, y = v
-    return 8pi^2 * k * cos(2pi * x) * sin(2pi * y)
+function (solver::AnalyticalSolution.CylindricalSolver)(x, center)
+    dx = x - center
+    r = sqrt(dx' * dx)
+    return AnalyticalSolution.analytical_solution(r, solver)
 end
 
 function measure_error(
@@ -26,7 +43,7 @@ function measure_error(
     solverorder,
     levelsetorder,
     distancefunction,
-    sourceterm,
+    negativesource,
     exactsolution,
     exactgradient,
     k1,
@@ -50,7 +67,7 @@ function measure_error(
         [nelmts, nelmts],
         number_of_basis_functions(levelsetbasis),
     )
-    levelset = CutCellDG.LevelSet(distancefunction, cgmesh, levelsetbasis)
+    levelset = CutCellDG.LevelSet(x -> ones(size(x)[2]), cgmesh, levelsetbasis)
     minelmtsize = minimum(CutCellDG.element_size(dgmesh))
 
     penalty = penaltyfactor
@@ -161,11 +178,7 @@ levelsetorder = 1
 k1 = k2 = 1.0
 penaltyfactor = 1.0
 beta = 0.5 * [1.0, 1.0]
-interfaceangle = 20.0
-normal = [cosd(interfaceangle),sind(interfaceangle)]
-distancefunction(x) = plane_distance_function(x, normal, [0.5, 0.0])
-
-# distancefunction(x) = circle_distance_function(x, [0.5, 0.5], 0.3)
+distancefunction(x) = circle_distance_function(x, [0.5, 0.5], 0.3)
 
 err2 = [
     measure_error(

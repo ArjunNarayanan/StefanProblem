@@ -1,24 +1,35 @@
 using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
-include("local_DG.jl")
+include("interior_penalty.jl")
+include("../cylinder-analytical-solution.jl")
 include("../useful_routines.jl")
 
-function exact_solution(v)
-    x, y = v
-    return cos(2pi * x) * sin(2pi * y)
-end
+function assemble_source_on_negative_mesh!(
+    systemrhs,
+    rhsfunc,
+    basis,
+    cellquads,
+    mesh,
+)
 
-function exact_gradient(v)
-    x, y = v
-    gx = -2pi * sin(2pi * x) * sin(2pi * y)
-    gy = 2pi * cos(2pi * x) * cos(2pi * y)
-    return [gx, gy]
-end
+    ncells = CutCellDG.number_of_cells(mesh)
+    for cellid = 1:ncells
+        cellsign = CutCellDG.cell_sign(mesh, cellid)
+        CutCellDG.check_cellsign(cellsign)
 
-function source_term(v, k)
-    x, y = v
-    return 8pi^2 * k * cos(2pi * x) * sin(2pi * y)
+        if cellsign == -1 || cellsign == 0
+            InteriorPenalty.assemble_cell_source!(
+                systemrhs,
+                rhsfunc,
+                basis,
+                cellquads,
+                mesh,
+                -1,
+                cellid,
+            )
+        end
+    end
 end
 
 function measure_error(
@@ -26,13 +37,11 @@ function measure_error(
     solverorder,
     levelsetorder,
     distancefunction,
-    sourceterm,
+    negativesource,
     exactsolution,
-    exactgradient,
     k1,
     k2,
     penaltyfactor,
-    beta,
 )
     numqp = required_quadrature_order(solverorder)
     solverbasis = LagrangeTensorProductBasis(2, solverorder)
@@ -52,9 +61,7 @@ function measure_error(
     )
     levelset = CutCellDG.LevelSet(distancefunction, cgmesh, levelsetbasis)
     minelmtsize = minimum(CutCellDG.element_size(dgmesh))
-
-    penalty = penaltyfactor
-    # penalty = penaltyfactor / minelmtsize * 0.5 * (k1 + k2)
+    penalty = penaltyfactor / minelmtsize
 
     cutmesh = CutCellDG.CutMesh(dgmesh, levelset)
     cellquads = CutCellDG.CellQuadratures(cutmesh, levelset, numqp)
@@ -68,7 +75,7 @@ function measure_error(
     sysmatrix = CutCellDG.SystemMatrix()
     sysrhs = CutCellDG.SystemRHS()
 
-    LocalDG.assemble_LDG_linear_system!(
+    InteriorPenalty.assemble_interior_penalty_linear_system!(
         sysmatrix,
         solverbasis,
         cellquads,
@@ -77,52 +84,69 @@ function measure_error(
         k1,
         k2,
         penalty,
-        beta,
         mergedmesh,
     )
-
-    LocalDG.assemble_LDG_rhs!(
+    InteriorPenalty.assemble_interior_penalty_rhs!(
         sysrhs,
-        sourceterm,
-        exactsolution,
+        x -> [0.0],
+        x -> [exactsolution(x)],
         solverbasis,
         cellquads,
         facequads,
         penalty,
         mergedmesh,
     )
+    assemble_source_on_negative_mesh!(
+        sysrhs,
+        negativesource,
+        solverbasis,
+        cellquads,
+        mergedmesh,
+    )
     ################################################################################
-    matrix = CutCellDG.sparse_operator(sysmatrix, mergedmesh, 3)
-    rhs = CutCellDG.rhs_vector(sysrhs, mergedmesh, 3)
-    sol = reshape(matrix \ rhs, 3, :)
+    matrix = CutCellDG.sparse_operator(sysmatrix, mergedmesh, 1)
+    rhs = CutCellDG.rhs_vector(sysrhs, mergedmesh, 1)
+    sol = matrix \ rhs
     ################################################################################
 
     ################################################################################
-    T = sol[1, :]'
-    G = sol[2:3, :]
-
-    errT = mesh_L2_error(T, exactsolution, solverbasis, cellquads, mergedmesh)
-    errG = mesh_L2_error(G, exactgradient, solverbasis, cellquads, mergedmesh)
+    err = mesh_L2_error(sol', exactsolution, solverbasis, cellquads, mergedmesh)
+    den = integral_norm_on_mesh(exactsolution, cellquads, mergedmesh, 1)
     ################################################################################
 
-    Tnorm = integral_norm_on_mesh(exactsolution, cellquads, mergedmesh, 1)
-    Gnorm = integral_norm_on_mesh(exactgradient, cellquads, mergedmesh, 2)
 
-    return errT[1] / Tnorm[1], errG ./ Gnorm
+    return err[1] / den[1]
+end
+
+function (solver::AnalyticalSolution.CylindricalSolver)(x, center)
+    dx = x - center
+    r = sqrt(dx' * dx)
+    return AnalyticalSolution.analytical_solution(r, solver)
 end
 
 
-
-
 ################################################################################
-powers = [2, 3, 4, 5]
+powers = [2, 3, 4, 5, 6]
 nelmts = 2 .^ powers .+ 1
 solverorder = 1
-levelsetorder = 1
-k1 = k2 = 1.0
-penaltyfactor = 1.0
-beta = 0.5 * [1.0, 1.0]
-distancefunction(x) = plane_distance_function(x, [1.0, 0.0], [0.5, 0.0])
+levelsetorder = 2
+k1 = 1.0
+k2 = 2.0
+penaltyfactor = 1e3
+center = [0.5, 0.5]
+innerradius = 0.4
+outerradius = 1.0
+q = 1.0
+Tw = 1.0
+distancefunction(x) = circle_distance_function(x, center, innerradius)
+analyticalsolution = AnalyticalSolution.CylindricalSolver(
+    q,
+    k1,
+    k2,
+    innerradius,
+    outerradius,
+    Tw,
+)
 
 err1 = [
     measure_error(
@@ -130,42 +154,42 @@ err1 = [
         solverorder,
         levelsetorder,
         distancefunction,
-        x -> source_term(x, k1),
-        exact_solution,
-        exact_gradient,
+        x -> [q],
+        x -> analyticalsolution(x, center),
         k1,
         k2,
         penaltyfactor,
-        beta,
     ) for ne in nelmts
 ]
 
-err1T = [er[1] for er in err1]
-err1G1 = [er[2][1] for er in err1]
-err1G2 = [er[2][2] for er in err1]
 
 dx = 1.0 ./ nelmts
-
-Trate1 = convergence_rate(dx, err1T)
-G1rate1 = convergence_rate(dx, err1G1)
-G2rate1 = convergence_rate(dx, err1G2)
+rate1 = convergence_rate(dx, err1)
 ################################################################################
 
 
-
 ################################################################################
-powers = [2, 3, 4, 5]
+powers = [2, 3, 4, 5, 6]
 nelmts = 2 .^ powers .+ 1
 solverorder = 2
-levelsetorder = 1
-k1 = k2 = 1.0
-penaltyfactor = 1.0
-beta = 0.5 * [1.0, 1.0]
-interfaceangle = 20.0
-normal = [cosd(interfaceangle),sind(interfaceangle)]
-distancefunction(x) = plane_distance_function(x, normal, [0.5, 0.0])
-
-# distancefunction(x) = circle_distance_function(x, [0.5, 0.5], 0.3)
+levelsetorder = 2
+k1 = 1.0
+k2 = 2.0
+penaltyfactor = 1e3
+center = [0.5, 0.5]
+innerradius = 0.4
+outerradius = 1.0
+q = 1.0
+Tw = 1.0
+distancefunction(x) = circle_distance_function(x, center, innerradius)
+analyticalsolution = AnalyticalSolution.CylindricalSolver(
+    q,
+    k1,
+    k2,
+    innerradius,
+    outerradius,
+    Tw,
+)
 
 err2 = [
     measure_error(
@@ -173,23 +197,15 @@ err2 = [
         solverorder,
         levelsetorder,
         distancefunction,
-        x -> source_term(x, k1),
-        exact_solution,
-        exact_gradient,
+        x -> [q],
+        x -> analyticalsolution(x, center),
         k1,
         k2,
         penaltyfactor,
-        beta,
     ) for ne in nelmts
 ]
 
-err2T = [er[1] for er in err2]
-err2G1 = [er[2][1] for er in err2]
-err2G2 = [er[2][2] for er in err2]
 
 dx = 1.0 ./ nelmts
-
-Trate2 = convergence_rate(dx, err2T)
-G1rate2 = convergence_rate(dx, err2G1)
-G2rate2 = convergence_rate(dx, err2G2)
+rate2 = convergence_rate(dx, err2)
 ################################################################################

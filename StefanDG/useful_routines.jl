@@ -30,9 +30,9 @@ function plane_distance_function(coords, normal, x0)
     return (coords .- x0)' * normal
 end
 
-function closest_point_on_plane(querypoints,normal,x0)
-    normalcomp = vec(normal'*(querypoints .- x0))
-    disp = hcat([c*normal for c in normalcomp]...)
+function closest_point_on_plane(querypoints, normal, x0)
+    normalcomp = vec(normal' * (querypoints .- x0))
+    disp = hcat([c * normal for c in normalcomp]...)
     return querypoints - disp
 end
 
@@ -42,12 +42,12 @@ function circle_distance_function(coords, center, radius)
     return distance
 end
 
-function closest_point_on_arc(querypoints,center,radius)
+function closest_point_on_arc(querypoints, center, radius)
     relpos = querypoints .- center
-    cqpoints = relpos[1,:] + im*relpos[2,:]
+    cqpoints = relpos[1, :] + im * relpos[2, :]
     theta = angle.(cqpoints)
-    v = vcat(cos.(theta)',sin.(theta)')
-    return center .+ radius*v
+    v = vcat(cos.(theta)', sin.(theta)')
+    return center .+ radius * v
 end
 
 function corner_distance_function(x::V, xc) where {V<:AbstractVector}
@@ -185,7 +185,7 @@ function cellwise_L2_error(
 end
 
 function average(v)
-    return sum(v)/length(v)
+    return sum(v) / length(v)
 end
 
 function convergence_rate(dx, err)
@@ -401,8 +401,8 @@ end
 function integral_norm_on_uniform_mesh(func, quad, mesh, ndofs)
     numcells = CutCellDG.number_of_cells(mesh)
     vals = zeros(ndofs)
-    for cellid in 1:numcells
-        cellmap = CutCellDG.cell_map(mesh,cellid)
+    for cellid = 1:numcells
+        cellmap = CutCellDG.cell_map(mesh, cellid)
         add_cell_norm_squared!(vals, func, cellmap, quad)
     end
     return sqrt.(vals)

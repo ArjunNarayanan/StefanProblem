@@ -41,7 +41,7 @@ function measure_error(
         [nelmts, nelmts],
         number_of_basis_functions(levelsetbasis),
     )
-    levelset = CutCellDG.LevelSet(x -> ones(size(x)[2]), cgmesh, levelsetbasis)
+    levelset = CutCellDG.LevelSet(distancefunction, cgmesh, levelsetbasis)
     minelmtsize = minimum(CutCellDG.element_size(dgmesh))
     penalty = penaltyfactor / minelmtsize
 

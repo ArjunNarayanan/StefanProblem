@@ -34,15 +34,35 @@ function assemble_face_scalar_flux_operator!(
     nodeids2,
 )
 
-    bp = normals' * beta
-    bm = -normals' * beta
-
     M11 =
         -0.5 *
         vec(scalar_flux_operator(basis, quad1, quad1, normals, scaleareas))
+    CutCellDG.assemble_couple_cell_matrix!(
+        sysmatrix,
+        nodeids1,
+        [2, 3],
+        nodeids1,
+        [1],
+        3,
+        M11,
+    )
+
     M12 =
         -0.5 *
         vec(scalar_flux_operator(basis, quad1, quad2, normals, scaleareas))
+    CutCellDG.assemble_couple_cell_matrix!(
+        sysmatrix,
+        nodeids1,
+        [2, 3],
+        nodeids2,
+        [1],
+        3,
+        M12,
+    )
+
+    bp = normals' * beta
+    bm = -bp
+
     N11 =
         -1.0 * vec(
             scalar_flux_operator(
@@ -53,6 +73,16 @@ function assemble_face_scalar_flux_operator!(
                 bp .* scaleareas,
             ),
         )
+    CutCellDG.assemble_couple_cell_matrix!(
+        sysmatrix,
+        nodeids1,
+        [2, 3],
+        nodeids1,
+        [1],
+        3,
+        N11,
+    )
+
     N12 =
         -1.0 * vec(
             scalar_flux_operator(
@@ -63,34 +93,6 @@ function assemble_face_scalar_flux_operator!(
                 bm .* scaleareas,
             ),
         )
-
-    CutCellDG.assemble_couple_cell_matrix!(
-        sysmatrix,
-        nodeids1,
-        [2, 3],
-        nodeids1,
-        [1],
-        3,
-        M11,
-    )
-    CutCellDG.assemble_couple_cell_matrix!(
-        sysmatrix,
-        nodeids1,
-        [2, 3],
-        nodeids2,
-        [1],
-        3,
-        M12,
-    )
-    CutCellDG.assemble_couple_cell_matrix!(
-        sysmatrix,
-        nodeids1,
-        [2, 3],
-        nodeids1,
-        [1],
-        3,
-        N11,
-    )
     CutCellDG.assemble_couple_cell_matrix!(
         sysmatrix,
         nodeids1,

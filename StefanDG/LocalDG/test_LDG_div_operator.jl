@@ -6,18 +6,19 @@ include("../useful_routines.jl")
 
 
 solverorder = 1
-levelsetorder = 2
-nelmts = 5
+levelsetorder = 1
+nelmts = 1
 penaltyfactor = 1.0
 beta = [1.0, 1.0]
 k1 = k2 = 1.0
+interfaceangle = 0.0
 
-center = [1.5,1.0]
+center = [1.5, 1.0]
 radius = 1.0
-distancefunction(x) = circle_distance_function(x,center,radius)
+distancefunction(x) = circle_distance_function(x, center, radius)
 
 
-numqp = required_quadrature_order(solverorder)+2
+numqp = required_quadrature_order(solverorder)
 solverbasis = LagrangeTensorProductBasis(2, solverorder)
 levelsetbasis = LagrangeTensorProductBasis(2, levelsetorder)
 
@@ -44,38 +45,18 @@ interfacequads = CutCellDG.InterfaceQuadratures(cutmesh, levelset, numqp)
 mergedmesh =
     CutCellDG.MergedMesh!(cutmesh, cellquads, facequads, interfacequads)
 
-sysmatrix = CutCellDG.SystemMatrix()
-sysrhs = CutCellDG.SystemRHS()
+jacobian = CutCellDG.jacobian(mergedmesh)
+detjac = CutCellDG.determinant_jacobian(mergedmesh)
+facedetjac = CutCellDG.face_determinant_jacobian(mergedmesh)
 
-LocalDG.assemble_LDG_linear_system!(
-    sysmatrix,
-    solverbasis,
-    cellquads,
-    facequads,
-    interfacequads,
-    k1,
-    k2,
-    penaltyfactor,
-    beta,
-    mergedmesh,
-)
-LocalDG.assemble_LDG_rhs!(
-    sysrhs,
-    x -> 0.0,
+D = LocalDG.divergence_operator(solverbasis, cellquads[-1, 1], jacobian, detjac)
+facenormals = CutCellDG.reference_face_normals()
+R = sum([LocalDG.boundary_face_scalar_flux(
     x -> 1.0,
     solverbasis,
-    cellquads,
-    facequads,
-    penaltyfactor,
-    mergedmesh,
-)
-
-matrix = CutCellDG.sparse_operator(sysmatrix, mergedmesh, 3)
-rhs = CutCellDG.rhs_vector(sysrhs, mergedmesh, 3)
-
-sol = reshape(matrix \ rhs, 3, :)
-T = sol[1, :]'
-G = sol[2:3, :]
-
-errT = mesh_L2_error(T, x -> 1.0, solverbasis, cellquads, mergedmesh)
-errG = mesh_L2_error(G, x -> [0.0, 0.0], solverbasis, cellquads, mergedmesh)
+    facequads[-1, faceid, 1],
+    facenormals[faceid],
+    CutCellDG.cell_map(mergedmesh, -1, 1),
+    facedetjac[faceid]
+) for faceid in 1:4])
+interfacenormals = CutCellDG.interface_normals(interfacequads,1)

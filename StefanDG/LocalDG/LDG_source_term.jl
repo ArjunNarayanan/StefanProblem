@@ -65,18 +65,25 @@ function boundary_face_scalar_flux(
     rhsfunc,
     basis,
     quad,
-    normal,
+    normals,
     cellmap,
-    facedetjac,
+    scaleareas,
 )
+
+    numqp = length(quad)
+    @assert size(normals) == (2,numqp)
+    @assert length(scaleareas) == numqp
 
     nf = number_of_basis_functions(basis)
     rhs = zeros(2nf)
-    for (p, w) in quad
+    for (idx,(p, w)) in enumerate(quad)
         V2 = CutCellDG.interpolation_matrix(basis(p), 2)
         gd = rhsfunc(cellmap(p))
 
-        rhs .+= V2' * normal * gd * facedetjac * w
+        n = normals[:,idx]
+        a = scaleareas[idx]
+
+        rhs .+= V2' * n * gd * a * w
     end
     return rhs
 end
@@ -91,13 +98,18 @@ function assemble_boundary_face_scalar_flux_source!(
     facedetjac,
     nodeids,
 )
+
+    numqp = length(quad)
+    normals = repeat(normal,inner=(1,numqp))
+    scaleareas = repeat([facedetjac],numqp)
+
     rhs = boundary_face_scalar_flux(
         rhsfunc,
         basis,
         quad,
-        normal,
+        normals,
         cellmap,
-        facedetjac,
+        scaleareas,
     )
     CutCellDG.assemble_cell_rhs!(systemrhs, nodeids, [2, 3], 3, rhs)
 end

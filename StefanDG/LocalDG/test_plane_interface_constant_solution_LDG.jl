@@ -11,6 +11,7 @@ nelmts = 1
 penaltyfactor = 1.0
 beta = [1.0, 1.0]
 k1 = k2 = 1.0
+
 interfaceangle = 0.0
 interfacepoint = [0.5, 0.0]
 interfacenormal = [cosd(interfaceangle), sind(interfaceangle)]

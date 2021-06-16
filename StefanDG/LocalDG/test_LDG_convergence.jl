@@ -24,6 +24,7 @@ end
 function measure_error(
     nelmts,
     solverorder,
+    numqp,
     levelsetorder,
     distancefunction,
     sourceterm,
@@ -34,7 +35,6 @@ function measure_error(
     penaltyfactor,
     beta,
 )
-    numqp = required_quadrature_order(solverorder)
     solverbasis = LagrangeTensorProductBasis(2, solverorder)
     levelsetbasis = LagrangeTensorProductBasis(2, levelsetorder)
 
@@ -118,17 +118,24 @@ end
 powers = [2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 solverorder = 1
+numqp = required_quadrature_order(solverorder)
 levelsetorder = 1
 k1 = k2 = 1.0
 penaltyfactor = 1.0
 beta = 0.5 * [1.0, 1.0]
-distancefunction(x) = plane_distance_function(x, [1.0, 0.0], [0.5, 0.0])
-# distancefunction(x) = -ones(size(x)[2])
+
+
+interfaceangle = 30.0
+interfacepoint = [0.8, 0.0]
+interfacenormal = [cosd(interfaceangle), sind(interfaceangle)]
+distancefunction(x) =
+    plane_distance_function(x, interfacenormal, interfacepoint)
 
 err1 = [
     measure_error(
         ne,
         solverorder,
+        numqp,
         levelsetorder,
         distancefunction,
         x -> source_term(x, k1),
@@ -158,20 +165,21 @@ G2rate1 = convergence_rate(dx, err1G2)
 powers = [2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 solverorder = 2
-levelsetorder = 1
+numqp = required_quadrature_order(solverorder)+2
+levelsetorder = 2
 k1 = k2 = 1.0
 penaltyfactor = 1.0
 beta = 0.5 * [1.0, 1.0]
-interfaceangle = 20.0
-normal = [cosd(interfaceangle),sind(interfaceangle)]
-distancefunction(x) = plane_distance_function(x, normal, [0.5, 0.0])
 
-# distancefunction(x) = circle_distance_function(x, [0.5, 0.5], 0.3)
+center = [0.5, 0.5]
+radius = 0.3
+distancefunction(x) = circle_distance_function(x, center, radius)
 
 err2 = [
     measure_error(
         ne,
         solverorder,
+        numqp,
         levelsetorder,
         distancefunction,
         x -> source_term(x, k1),

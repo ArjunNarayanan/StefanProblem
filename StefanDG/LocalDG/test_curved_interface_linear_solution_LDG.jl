@@ -4,6 +4,18 @@ using CutCellDG
 include("local_DG.jl")
 include("../useful_routines.jl")
 
+function exact_solution(v)
+    x, y = v
+    return 3x + 4y
+end
+
+function exact_gradient(v)
+    return [3.,4.]
+end
+
+function source_term(v, k)
+    return 0.0
+end
 
 solverorder = 1
 levelsetorder = 2
@@ -15,7 +27,6 @@ k1 = k2 = 1.0
 center = [1.5,1.0]
 radius = 1.0
 distancefunction(x) = circle_distance_function(x,center,radius)
-
 
 numqp = required_quadrature_order(solverorder)+2
 solverbasis = LagrangeTensorProductBasis(2, solverorder)
@@ -33,8 +44,12 @@ cgmesh = CutCellDG.CGMesh(
     [nelmts, nelmts],
     number_of_basis_functions(levelsetbasis),
 )
-
-levelset = CutCellDG.LevelSet(distancefunction, cgmesh, levelsetbasis)
+levelset = CutCellDG.LevelSet(
+    distancefunction,
+    cgmesh,
+    levelsetbasis,
+)
+minelmtsize = minimum(CutCellDG.element_size(dgmesh))
 
 cutmesh = CutCellDG.CutMesh(dgmesh, levelset)
 cellquads = CutCellDG.CellQuadratures(cutmesh, levelset, numqp)
@@ -61,8 +76,8 @@ LocalDG.assemble_LDG_linear_system!(
 )
 LocalDG.assemble_LDG_rhs!(
     sysrhs,
-    x -> 0.0,
-    x -> 1.0,
+    x -> source_term(x, k1),
+    exact_solution,
     solverbasis,
     cellquads,
     facequads,
@@ -77,5 +92,5 @@ sol = reshape(matrix \ rhs, 3, :)
 T = sol[1, :]'
 G = sol[2:3, :]
 
-errT = mesh_L2_error(T, x -> 1.0, solverbasis, cellquads, mergedmesh)
-errG = mesh_L2_error(G, x -> [0.0, 0.0], solverbasis, cellquads, mergedmesh)
+errT = mesh_L2_error(T,exact_solution,solverbasis,cellquads,mergedmesh)
+errG = mesh_L2_error(G,exact_gradient,solverbasis,cellquads,mergedmesh)

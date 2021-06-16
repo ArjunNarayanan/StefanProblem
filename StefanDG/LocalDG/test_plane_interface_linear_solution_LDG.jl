@@ -20,11 +20,17 @@ end
 solverorder = 2
 levelsetorder = 1
 nelmts = 5
-penaltyfactor = 1.0
+penaltyfactor = 1
 beta = [1.0, 1.0]
 k1 = k2 = 1.0
 
-numqp = required_quadrature_order(solverorder)
+interfaceangle = 30.0
+interfacepoint = [0.8, 0.0]
+interfacenormal = [cosd(interfaceangle), sind(interfaceangle)]
+distancefunction(x) =
+    plane_distance_function(x, interfacenormal, interfacepoint)
+
+numqp = required_quadrature_order(solverorder)+2
 solverbasis = LagrangeTensorProductBasis(2, solverorder)
 levelsetbasis = LagrangeTensorProductBasis(2, levelsetorder)
 
@@ -41,7 +47,7 @@ cgmesh = CutCellDG.CGMesh(
     number_of_basis_functions(levelsetbasis),
 )
 levelset = CutCellDG.LevelSet(
-    x -> plane_distance_function(x, [1.0, 0.0], [0.5, 0.0]),
+    distancefunction,
     cgmesh,
     levelsetbasis,
 )

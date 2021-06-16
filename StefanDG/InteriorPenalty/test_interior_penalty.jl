@@ -43,6 +43,8 @@ function measure_error(
     )
     levelset = CutCellDG.LevelSet(distancefunction, cgmesh, levelsetbasis)
     minelmtsize = minimum(CutCellDG.element_size(dgmesh))
+
+    # penalty = penaltyfactor
     penalty = penaltyfactor / minelmtsize
 
     cutmesh = CutCellDG.CutMesh(dgmesh, levelset)
@@ -101,7 +103,7 @@ k1 = k2 = 1.0
 penaltyfactor = 1e3
 distancefunction(x) = plane_distance_function(x, [1.0, 0.0], [0.5, 0.0])
 
-err = [
+err1 = [
     measure_error(
         ne,
         solverorder,
@@ -116,7 +118,7 @@ err = [
 ]
 
 dx = 1.0 ./ nelmts
-rate1 = convergence_rate(dx,err)
+rate1 = convergence_rate(dx,err1)
 ################################################################################
 
 
@@ -131,7 +133,7 @@ penaltyfactor = 1e3
 # distancefunction(x) = plane_distance_function(x, [1.0, 0.0], [0.5, 0.0])
 distancefunction(x) = circle_distance_function(x,[0.5,0.5],0.25)
 
-err = [
+err2 = [
     measure_error(
         ne,
         solverorder,
@@ -146,5 +148,5 @@ err = [
 ]
 
 dx = 1.0 ./ nelmts
-rate2 = convergence_rate(dx,err)
+rate2 = convergence_rate(dx,err2)
 ################################################################################

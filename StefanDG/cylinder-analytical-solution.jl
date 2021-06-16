@@ -7,29 +7,21 @@ struct CylindricalSolver
     R::Any
     b::Any
     Tw::Any
-    B1::Any
-    A2::Any
-    B2::Any
     function CylindricalSolver(q, k1, k2, R, b, Tw)
-        B1, A2, B2 = analytical_coefficients(q, k2, R, b, Tw)
-        new(q, k1, k2, R, b, Tw, B1, A2, B2)
+        new(q, k1, k2, R, b, Tw)
     end
 end
 
-function analytical_coefficients(q, k2, R, b, Tw)
-    B1 = Tw + q / 4k2 * (b^2 - R^2 + 2R^2 * (log(R) - log(b)))
-    A2 = q / k2 * R^2 / 2
-    B2 = Tw + q / 4k2 * (b^2 - 2R^2 * log(b))
-
-    return [B1, A2, B2]
+function solution_field(r, q, k2, R, b, Tw)
+    T = Tw + q / 4k2 * ((b^2 - r^2) + 2R^2 * (log(r) - log(b)))
+    return T
 end
 
-function analytical_solution(r, q, k2, R, b, B1, A2, B2)
+function analytical_solution(r, q, k2, R, b, Tw)
     if r < R
-        return B1
+        return solution_field(R, q, k2, R, b, Tw)
     else
-        T = -q / k2 * r^2 / 4 + A2 * log(r) + B2
-        return T
+        return solution_field(r, q, k2, R, b, Tw)
     end
 end
 
@@ -40,10 +32,20 @@ function analytical_solution(r, solver::CylindricalSolver)
         solver.k2,
         solver.R,
         solver.b,
-        solver.B1,
-        solver.A2,
-        solver.B2,
+        solver.Tw,
     )
+end
+
+function analytical_radial_derivative(r, q, k2, R)
+    if r < R
+        return 0.
+    else
+        return Tr = -q / 2k2 * r * (1.0 - R^2 / r^2)
+    end
+end
+
+function analytical_radial_derivative(r, solver::CylindricalSolver)
+    return analytical_radial_derivative(r, solver.q, solver.k2, solver.R)
 end
 
 end

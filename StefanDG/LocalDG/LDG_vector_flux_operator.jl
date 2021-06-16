@@ -29,8 +29,10 @@ function mass_operator(basis, quad1, quad2, ndofs, scaleareas)
     @assert length(scaleareas) == numqp
 
     nf = number_of_basis_functions(basis)
-    matrix = zeros(nf, nf)
-    for idx = 1:length(quad1)
+    totaldofs = ndofs*nf
+    matrix = zeros(totaldofs, totaldofs)
+
+    for idx = 1:numqp
         p1, w1 = quad1[idx]
         p2, w2 = quad2[idx]
 
@@ -56,9 +58,6 @@ function assemble_face_vector_flux_operator!(
     nodeids1,
     nodeids2,
 )
-
-    posnormals = normals
-    negnormals = -normals
 
     M11 =
         -0.5 *
@@ -87,10 +86,12 @@ function assemble_face_vector_flux_operator!(
         M12,
     )
 
-    nnp = vec(mapslices(sum, posnormals .* posnormals, dims = 1))
-    nnm = vec(mapslices(sum, negnormals .* posnormals, dims = 1))
+    posnormals = normals
+    negnormals = -normals
+    pp = vec(mapslices(sum, posnormals .* posnormals, dims = 1))
+    np = vec(mapslices(sum, negnormals .* posnormals, dims = 1))
 
-    N11 = alpha * vec(mass_operator(basis, quad1, quad1, 1, nnp .* scaleareas))
+    N11 = alpha * vec(mass_operator(basis, quad1, quad1, 1, pp .* scaleareas))
     CutCellDG.assemble_couple_cell_matrix!(
         sysmatrix,
         nodeids1,
@@ -100,7 +101,7 @@ function assemble_face_vector_flux_operator!(
         3,
         N11,
     )
-    N12 = alpha * vec(mass_operator(basis, quad1, quad2, 1, nnm .* scaleareas))
+    N12 = alpha * vec(mass_operator(basis, quad1, quad2, 1, np .* scaleareas))
     CutCellDG.assemble_couple_cell_matrix!(
         sysmatrix,
         nodeids1,
@@ -316,8 +317,8 @@ function assemble_cell_interface_vector_flux_operator!(
     quad1 = interfacequads[+1, cellid]
     quad2 = interfacequads[-1, cellid]
 
-    negnormals = CutCellDG.interface_normals(interfacequads, cellid)
-    posnormals = -1.0 * negnormals
+    normals2 = CutCellDG.interface_normals(interfacequads, cellid)
+    normals1 = -1.0 * normals2
     scaleareas = CutCellDG.interface_scale_areas(interfacequads, cellid)
 
     nodeids1 = CutCellDG.nodal_connectivity(mesh, +1, cellid)
@@ -328,7 +329,7 @@ function assemble_cell_interface_vector_flux_operator!(
         basis,
         quad1,
         quad2,
-        posnormals,
+        normals1,
         k1,
         k2,
         alpha,
@@ -342,7 +343,7 @@ function assemble_cell_interface_vector_flux_operator!(
         basis,
         quad2,
         quad1,
-        negnormals,
+        normals2,
         k2,
         k1,
         alpha,
@@ -419,7 +420,6 @@ function assemble_boundary_face_vector_flux_operator!(
         )
 
         nnp = vec(mapslices(sum, posnormals .* posnormals, dims = 1))
-        nnm = vec(mapslices(sum, negnormals .* posnormals, dims = 1))
 
         N11 = alpha * vec(mass_operator(basis, quad, quad, 1, nnp .* scaleareas))
         CutCellDG.assemble_couple_cell_matrix!(

@@ -123,6 +123,7 @@ k1 = k2 = 1.0
 penaltyfactor = 1.0
 beta = 0.5 * [1.0, 1.0]
 distancefunction(x) = plane_distance_function(x, [1.0, 0.0], [0.5, 0.0])
+# distancefunction(x) = -ones(size(x)[2])
 
 err1 = [
     measure_error(

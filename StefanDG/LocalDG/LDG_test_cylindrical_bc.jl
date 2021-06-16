@@ -38,8 +38,9 @@ function (solver::AnalyticalSolution.CylindricalSolver)(x, center)
     return AnalyticalSolution.analytical_solution(r, solver)
 end
 
-nelmts = 17
+nelmts = 9
 solverorder = 1
+numqp = required_quadrature_order(solverorder)
 levelsetorder = 2
 k1 = k2 = 1.0
 penaltyfactor = 1.0
@@ -61,7 +62,6 @@ analyticalsolution = AnalyticalSolution.CylindricalSolver(
     Tw,
 )
 
-numqp = required_quadrature_order(solverorder)
 solverbasis = LagrangeTensorProductBasis(2, solverorder)
 levelsetbasis = LagrangeTensorProductBasis(2, levelsetorder)
 

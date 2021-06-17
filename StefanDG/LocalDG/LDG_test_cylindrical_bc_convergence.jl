@@ -187,6 +187,7 @@ innerradius = 0.4
 outerradius = 1.0
 penaltyfactor = 1.0
 beta = 0.5 * [1.0, 1.0]
+
 distancefunction(x) = circle_distance_function(x, center, innerradius)
 analyticalsolution = AnalyticalSolution.CylindricalSolver(
     q1,
@@ -231,57 +232,57 @@ G2rate1 = convergence_rate(dx, err1G2)
 
 
 ################################################################################
-powers = [2, 3, 4, 5]
-nelmts = 2 .^ powers .+ 1
-solverorder = 2
-numqp = required_quadrature_order(solverorder) + 2
-levelsetorder = 2
-k1 = 1.0
-k2 = 2.0
-q1 = 1.0
-q2 = 2.0
-Tw = 1.0
-center = [0.5, 0.5]
-innerradius = 0.4
-outerradius = 1.0
-penaltyfactor = 1.0
-beta = 0.5 * [1.0, 1.0]
-distancefunction(x) = circle_distance_function(x, center, innerradius)
-analyticalsolution = AnalyticalSolution.CylindricalSolver(
-    q1,
-    k1,
-    q2,
-    k2,
-    innerradius,
-    outerradius,
-    Tw,
-)
-
-err2 = [
-    measure_error(
-        ne,
-        solverorder,
-        numqp,
-        levelsetorder,
-        distancefunction,
-        x -> q1,
-        x -> q2,
-        x -> analyticalsolution(x, center),
-        x -> analytical_gradient(analyticalsolution, x, center),
-        k1,
-        k2,
-        penaltyfactor,
-        beta,
-    ) for ne in nelmts
-]
-
-err2T = [er[1] for er in err2]
-err2G1 = [er[2][1] for er in err2]
-err2G2 = [er[2][2] for er in err2]
-
-dx = 1.0 ./ nelmts
-
-Trate2 = convergence_rate(dx, err2T)
-G1rate2 = convergence_rate(dx, err2G1)
-G2rate2 = convergence_rate(dx, err2G2)
+# powers = [2, 3, 4, 5]
+# nelmts = 2 .^ powers .+ 1
+# solverorder = 2
+# numqp = required_quadrature_order(solverorder) + 2
+# levelsetorder = 2
+# k1 = 1.0
+# k2 = 2.0
+# q1 = 1.0
+# q2 = 2.0
+# Tw = 1.0
+# center = [0.5, 0.5]
+# innerradius = 0.4
+# outerradius = 1.0
+# penaltyfactor = 1.0
+# beta = 0.5 * [1.0, 1.0]
+# distancefunction(x) = circle_distance_function(x, center, innerradius)
+# analyticalsolution = AnalyticalSolution.CylindricalSolver(
+#     q1,
+#     k1,
+#     q2,
+#     k2,
+#     innerradius,
+#     outerradius,
+#     Tw,
+# )
+#
+# err2 = [
+#     measure_error(
+#         ne,
+#         solverorder,
+#         numqp,
+#         levelsetorder,
+#         distancefunction,
+#         x -> q1,
+#         x -> q2,
+#         x -> analyticalsolution(x, center),
+#         x -> analytical_gradient(analyticalsolution, x, center),
+#         k1,
+#         k2,
+#         penaltyfactor,
+#         beta,
+#     ) for ne in nelmts
+# ]
+#
+# err2T = [er[1] for er in err2]
+# err2G1 = [er[2][1] for er in err2]
+# err2G2 = [er[2][2] for er in err2]
+#
+# dx = 1.0 ./ nelmts
+#
+# Trate2 = convergence_rate(dx, err2T)
+# G1rate2 = convergence_rate(dx, err2G1)
+# G2rate2 = convergence_rate(dx, err2G2)
 ################################################################################

@@ -5,9 +5,10 @@ include("local_DG.jl")
 include("../cylinder-analytical-solution.jl")
 include("../useful_routines.jl")
 
-function assemble_source_on_negative_mesh!(
+function assemble_two_phase_source!(
     systemrhs,
-    rhsfunc,
+    rhsfunc1,
+    rhsfunc2,
     basis,
     cellquads,
     mesh,
@@ -18,10 +19,21 @@ function assemble_source_on_negative_mesh!(
         cellsign = CutCellDG.cell_sign(mesh, cellid)
         CutCellDG.check_cellsign(cellsign)
 
+        if cellsign == +1 || cellsign == 0
+            LocalDG.assemble_cell_source!(
+                systemrhs,
+                rhsfunc1,
+                basis,
+                cellquads,
+                mesh,
+                +1,
+                cellid,
+            )
+        end
         if cellsign == -1 || cellsign == 0
             LocalDG.assemble_cell_source!(
                 systemrhs,
-                rhsfunc,
+                rhsfunc2,
                 basis,
                 cellquads,
                 mesh,
@@ -62,7 +74,8 @@ function measure_error(
     numqp,
     levelsetorder,
     distancefunction,
-    negativesource,
+    rhsfunc1,
+    rhsfunc2,
     exactsolution,
     exactgradient,
     k1,
@@ -126,9 +139,10 @@ function measure_error(
         penalty,
         mergedmesh,
     )
-    assemble_source_on_negative_mesh!(
+    assemble_two_phase_source!(
         sysrhs,
-        negativesource,
+        rhsfunc1,
+        rhsfunc2,
         solverbasis,
         cellquads,
         mergedmesh,
@@ -158,24 +172,26 @@ end
 
 
 ################################################################################
-powers = [2, 3, 4, 5, 6]
+powers = [2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 solverorder = 1
 numqp = required_quadrature_order(solverorder) + 2
 levelsetorder = 2
 k1 = 1.0
 k2 = 2.0
+q1 = 1.0
+q2 = 2.0
+Tw = 1.0
 center = [0.5, 0.5]
 innerradius = 0.4
 outerradius = 1.0
-q = 1.0
-Tw = 1.0
 penaltyfactor = 1.0
 beta = 0.5 * [1.0, 1.0]
 distancefunction(x) = circle_distance_function(x, center, innerradius)
 analyticalsolution = AnalyticalSolution.CylindricalSolver(
-    q,
+    q1,
     k1,
+    q2,
     k2,
     innerradius,
     outerradius,
@@ -190,7 +206,8 @@ err1 = [
         numqp,
         levelsetorder,
         distancefunction,
-        x -> q,
+        x -> q1,
+        x -> q2,
         x -> analyticalsolution(x, center),
         x -> analytical_gradient(analyticalsolution, x, center),
         k1,
@@ -214,24 +231,26 @@ G2rate1 = convergence_rate(dx, err1G2)
 
 
 ################################################################################
-powers = [2, 3, 4, 5, 6]
+powers = [2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 solverorder = 2
 numqp = required_quadrature_order(solverorder) + 2
 levelsetorder = 2
 k1 = 1.0
 k2 = 2.0
-center = [1.0, 1.0]
-innerradius = 0.5
-outerradius = 1.5
-q = 1.0
+q1 = 1.0
+q2 = 2.0
 Tw = 1.0
+center = [0.5, 0.5]
+innerradius = 0.4
+outerradius = 1.0
 penaltyfactor = 1.0
 beta = 0.5 * [1.0, 1.0]
 distancefunction(x) = circle_distance_function(x, center, innerradius)
 analyticalsolution = AnalyticalSolution.CylindricalSolver(
-    q,
+    q1,
     k1,
+    q2,
     k2,
     innerradius,
     outerradius,
@@ -245,7 +264,8 @@ err2 = [
         numqp,
         levelsetorder,
         distancefunction,
-        x -> q,
+        x -> q1,
+        x -> q2,
         x -> analyticalsolution(x, center),
         x -> analytical_gradient(analyticalsolution, x, center),
         k1,

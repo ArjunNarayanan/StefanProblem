@@ -1,34 +1,47 @@
 module AnalyticalSolution
 
 struct CylindricalSolver
-    q::Any
+    q1::Any
     k1::Any
+    q2::Any
     k2::Any
     R::Any
     b::Any
     Tw::Any
-    function CylindricalSolver(q, k1, k2, R, b, Tw)
-        new(q, k1, k2, R, b, Tw)
+    function CylindricalSolver(q1, k1, q2, k2, R, b, Tw)
+        new(q1, k1, q2, k2, R, b, Tw)
     end
 end
 
-function solution_field(r, q, k2, R, b, Tw)
-    T = Tw + q / 4k2 * ((b^2 - r^2) + 2R^2 * (log(r) - log(b)))
+function core_solution(r, q1, k1, q2, k2, R, b, Tw)
+    T =
+        Tw +
+        q1 / 4k1 * (R^2 - r^2) +
+        q2 / 4k2 * (b^2 - R^2) +
+        R^2 / 2k2 * (q2 - q1) * (log(R) - log(b))
     return T
 end
 
-function analytical_solution(r, q, k2, R, b, Tw)
+function rim_solution(r, q1, k1, q2, k2, R, b, Tw)
+    T =
+        Tw + q2 / 4k2 * (b^2 - r^2) + q2 / 2k2 * R^2 * (log(r) - log(b)) -
+        q1 / 2k2 * R^2 * log(r)
+end
+
+function analytical_solution(r, q1, k1, q2, k2, R, b, Tw)
     if r < R
-        return solution_field(R, q, k2, R, b, Tw)
+        return core_solution(r, q1, k1, q2, k2, R, b, Tw)
     else
-        return solution_field(r, q, k2, R, b, Tw)
+        return rim_solution(r, q1, k1, q2, k2, R, b, Tw)
     end
 end
 
 function analytical_solution(r, solver::CylindricalSolver)
     return analytical_solution(
         r,
-        solver.q,
+        solver.q1,
+        solver.k1,
+        solver.q2,
         solver.k2,
         solver.R,
         solver.b,
@@ -36,16 +49,18 @@ function analytical_solution(r, solver::CylindricalSolver)
     )
 end
 
-function analytical_radial_derivative(r, q, k2, R)
+function analytical_radial_derivative(r, q1, k1, q2, k2, R)
     if r < R
-        return 0.
+        Tr = -q1 / 2k1 * r
+        return Tr
     else
-        return Tr = -q / 2k2 * r * (1.0 - R^2 / r^2)
+        Tr = -q1 / 2k2 * R^2 / r - q2 / 2k2 * r * (1 - R^2 / r^2)
+        return Tr
     end
 end
 
 function analytical_radial_derivative(r, solver::CylindricalSolver)
-    return analytical_radial_derivative(r, solver.q, solver.k2, solver.R)
+    return analytical_radial_derivative(r, solver.q1, solver.k1,solver.q2, solver.k2, solver.R)
 end
 
 end

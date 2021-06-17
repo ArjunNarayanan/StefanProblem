@@ -5,9 +5,10 @@ include("local_DG.jl")
 include("../cylinder-analytical-solution.jl")
 include("../useful_routines.jl")
 
-function assemble_source_on_negative_mesh!(
+function assemble_two_phase_source!(
     systemrhs,
-    rhsfunc,
+    rhsfunc1,
+    rhsfunc2,
     basis,
     cellquads,
     mesh,
@@ -18,10 +19,21 @@ function assemble_source_on_negative_mesh!(
         cellsign = CutCellDG.cell_sign(mesh, cellid)
         CutCellDG.check_cellsign(cellsign)
 
+        if cellsign == +1 || cellsign == 0
+            LocalDG.assemble_cell_source!(
+                systemrhs,
+                rhsfunc1,
+                basis,
+                cellquads,
+                mesh,
+                +1,
+                cellid,
+            )
+        end
         if cellsign == -1 || cellsign == 0
             LocalDG.assemble_cell_source!(
                 systemrhs,
-                rhsfunc,
+                rhsfunc2,
                 basis,
                 cellquads,
                 mesh,
@@ -43,6 +55,8 @@ solverorder = 1
 numqp = required_quadrature_order(solverorder)
 levelsetorder = 2
 k1 = k2 = 1.0
+q1 = 0.0
+q2 = 1.0
 penaltyfactor = 1.0
 beta = 0.5 * [1.0, 1.0]
 
@@ -54,8 +68,9 @@ Tw = 1.0
 
 distancefunction(x) = circle_distance_function(x, center, innerradius)
 analyticalsolution = AnalyticalSolution.CylindricalSolver(
-    q,
+    q1,
     k1,
+    q2,
     k2,
     innerradius,
     outerradius,
@@ -112,9 +127,10 @@ LocalDG.assemble_LDG_rhs!(
     penaltyfactor,
     mergedmesh,
 )
-assemble_source_on_negative_mesh!(
+assemble_two_phase_source!(
     sysrhs,
-    x -> q,
+    x -> q1,
+    x -> q2,
     solverbasis,
     cellquads,
     mergedmesh,

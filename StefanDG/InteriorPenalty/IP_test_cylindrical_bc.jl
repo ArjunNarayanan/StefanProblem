@@ -5,9 +5,10 @@ include("interior_penalty.jl")
 include("../cylinder-analytical-solution.jl")
 include("../useful_routines.jl")
 
-function assemble_source_on_negative_mesh!(
+function assemble_two_phase_source!(
     systemrhs,
-    rhsfunc,
+    rhsfunc1,
+    rhsfunc2,
     basis,
     cellquads,
     mesh,
@@ -18,10 +19,21 @@ function assemble_source_on_negative_mesh!(
         cellsign = CutCellDG.cell_sign(mesh, cellid)
         CutCellDG.check_cellsign(cellsign)
 
+        if cellsign == +1 || cellsign == 0
+            InteriorPenalty.assemble_cell_source!(
+                systemrhs,
+                rhsfunc1,
+                basis,
+                cellquads,
+                mesh,
+                +1,
+                cellid,
+            )
+        end
         if cellsign == -1 || cellsign == 0
             InteriorPenalty.assemble_cell_source!(
                 systemrhs,
-                rhsfunc,
+                rhsfunc2,
                 basis,
                 cellquads,
                 mesh,
@@ -39,7 +51,7 @@ function (solver::AnalyticalSolution.CylindricalSolver)(x, center)
 end
 
 
-nelmts = 8
+nelmts = 33
 solverorder = 1
 levelsetorder = 2
 k1 = k2 = 1.0
@@ -47,21 +59,19 @@ penaltyfactor = 1e3
 center = [0.5, 0.5]
 innerradius = 0.4
 outerradius = 1.0
-q = 1.0
+q1 = 1.0
+q2 = 1.0
 Tw = 1.0
 distancefunction(x) = circle_distance_function(x, center, innerradius)
 analyticalsolution = AnalyticalSolution.CylindricalSolver(
-    q,
+    q1,
     k1,
+    q2,
     k2,
     innerradius,
     outerradius,
     Tw,
 )
-
-
-
-
 
 
 numqp = required_quadrature_order(solverorder)
@@ -118,9 +128,10 @@ InteriorPenalty.assemble_interior_penalty_rhs!(
     penalty,
     mergedmesh,
 )
-assemble_source_on_negative_mesh!(
+assemble_two_phase_source!(
     sysrhs,
-    x -> [q],
+    x -> [q1],
+    x -> [q2],
     solverbasis,
     cellquads,
     mergedmesh,

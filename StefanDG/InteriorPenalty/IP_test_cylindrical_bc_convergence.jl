@@ -5,9 +5,10 @@ include("interior_penalty.jl")
 include("../cylinder-analytical-solution.jl")
 include("../useful_routines.jl")
 
-function assemble_source_on_negative_mesh!(
+function assemble_two_phase_source!(
     systemrhs,
-    rhsfunc,
+    rhsfunc1,
+    rhsfunc2,
     basis,
     cellquads,
     mesh,
@@ -18,10 +19,21 @@ function assemble_source_on_negative_mesh!(
         cellsign = CutCellDG.cell_sign(mesh, cellid)
         CutCellDG.check_cellsign(cellsign)
 
+        if cellsign == +1 || cellsign == 0
+            InteriorPenalty.assemble_cell_source!(
+                systemrhs,
+                rhsfunc1,
+                basis,
+                cellquads,
+                mesh,
+                +1,
+                cellid,
+            )
+        end
         if cellsign == -1 || cellsign == 0
             InteriorPenalty.assemble_cell_source!(
                 systemrhs,
-                rhsfunc,
+                rhsfunc2,
                 basis,
                 cellquads,
                 mesh,
@@ -35,15 +47,19 @@ end
 function measure_error(
     nelmts,
     solverorder,
+    numqp,
     levelsetorder,
     distancefunction,
-    negativesource,
+    rhsfunc1,
+    rhsfunc2,
     exactsolution,
     k1,
     k2,
     penaltyfactor,
 )
-    numqp = required_quadrature_order(solverorder)
+
+    println("Number of elements = $nelmts")
+
     solverbasis = LagrangeTensorProductBasis(2, solverorder)
     levelsetbasis = LagrangeTensorProductBasis(2, levelsetorder)
 
@@ -96,9 +112,10 @@ function measure_error(
         penalty,
         mergedmesh,
     )
-    assemble_source_on_negative_mesh!(
+    assemble_two_phase_source!(
         sysrhs,
-        negativesource,
+        rhsfunc1,
+        rhsfunc2,
         solverbasis,
         cellquads,
         mergedmesh,
@@ -126,22 +143,25 @@ end
 
 
 ################################################################################
-powers = [2, 3, 4, 5, 6]
+powers = [2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 solverorder = 1
+numqp = required_quadrature_order(solverorder)
 levelsetorder = 2
 k1 = 1.0
 k2 = 2.0
+q1 = 1.0
+q2 = 2.0
 penaltyfactor = 1e3
 center = [0.5, 0.5]
-innerradius = 0.4
+innerradius = 0.3
 outerradius = 1.0
-q = 1.0
 Tw = 1.0
 distancefunction(x) = circle_distance_function(x, center, innerradius)
 analyticalsolution = AnalyticalSolution.CylindricalSolver(
-    q,
+    q1,
     k1,
+    q2,
     k2,
     innerradius,
     outerradius,
@@ -152,9 +172,11 @@ err1 = [
     measure_error(
         ne,
         solverorder,
+        numqp,
         levelsetorder,
         distancefunction,
-        x -> [q],
+        x -> [q1],
+        x -> [q2],
         x -> analyticalsolution(x, center),
         k1,
         k2,
@@ -169,22 +191,25 @@ rate1 = convergence_rate(dx, err1)
 
 
 ################################################################################
-powers = [2, 3, 4, 5, 6]
+powers = [2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 solverorder = 2
+numqp = required_quadrature_order(solverorder)+2
 levelsetorder = 2
 k1 = 1.0
 k2 = 2.0
+q1 = 1.0
+q2 = 2.0
 penaltyfactor = 1e3
 center = [1.0, 1.0]
-innerradius = 0.5
-outerradius = 1.5
-q = 1.0
+innerradius = 0.25
+outerradius = 1.0
 Tw = 1.0
 distancefunction(x) = circle_distance_function(x, center, innerradius)
 analyticalsolution = AnalyticalSolution.CylindricalSolver(
-    q,
+    q1,
     k1,
+    q2,
     k2,
     innerradius,
     outerradius,
@@ -195,9 +220,11 @@ err2 = [
     measure_error(
         ne,
         solverorder,
+        numqp,
         levelsetorder,
         distancefunction,
-        x -> [q],
+        x -> [q1],
+        x -> [q2],
         x -> analyticalsolution(x, center),
         k1,
         k2,

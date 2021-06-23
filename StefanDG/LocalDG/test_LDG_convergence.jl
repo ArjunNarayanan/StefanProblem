@@ -162,43 +162,43 @@ G2rate1 = convergence_rate(dx, err1G2)
 
 
 ################################################################################
-powers = [2, 3, 4, 5]
-nelmts = 2 .^ powers .+ 1
-solverorder = 2
-numqp = required_quadrature_order(solverorder)+2
-levelsetorder = 2
-k1 = k2 = 1.0
-penaltyfactor = 1.0
-beta = 0.5 * [1.0, 1.0]
-
-center = [0.5, 0.5]
-radius = 0.3
-distancefunction(x) = circle_distance_function(x, center, radius)
-
-err2 = [
-    measure_error(
-        ne,
-        solverorder,
-        numqp,
-        levelsetorder,
-        distancefunction,
-        x -> source_term(x, k1),
-        exact_solution,
-        exact_gradient,
-        k1,
-        k2,
-        penaltyfactor,
-        beta,
-    ) for ne in nelmts
-]
-
-err2T = [er[1] for er in err2]
-err2G1 = [er[2][1] for er in err2]
-err2G2 = [er[2][2] for er in err2]
-
-dx = 1.0 ./ nelmts
-
-Trate2 = convergence_rate(dx, err2T)
-G1rate2 = convergence_rate(dx, err2G1)
-G2rate2 = convergence_rate(dx, err2G2)
+# powers = [2, 3, 4, 5]
+# nelmts = 2 .^ powers .+ 1
+# solverorder = 2
+# numqp = required_quadrature_order(solverorder)+2
+# levelsetorder = 2
+# k1 = k2 = 1.0
+# penaltyfactor = 1.0
+# beta = 0.5 * [1.0, 1.0]
+#
+# center = [0.5, 0.5]
+# radius = 0.3
+# distancefunction(x) = circle_distance_function(x, center, radius)
+#
+# err2 = [
+#     measure_error(
+#         ne,
+#         solverorder,
+#         numqp,
+#         levelsetorder,
+#         distancefunction,
+#         x -> source_term(x, k1),
+#         exact_solution,
+#         exact_gradient,
+#         k1,
+#         k2,
+#         penaltyfactor,
+#         beta,
+#     ) for ne in nelmts
+# ]
+#
+# err2T = [er[1] for er in err2]
+# err2G1 = [er[2][1] for er in err2]
+# err2G2 = [er[2][2] for er in err2]
+#
+# dx = 1.0 ./ nelmts
+#
+# Trate2 = convergence_rate(dx, err2T)
+# G1rate2 = convergence_rate(dx, err2G1)
+# G2rate2 = convergence_rate(dx, err2G2)
 ################################################################################

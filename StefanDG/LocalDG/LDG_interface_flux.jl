@@ -51,7 +51,36 @@ function (solver::AnalyticalSolution.CylindricalSolver)(x, center)
     return AnalyticalSolution.analytical_solution(r, solver)
 end
 
-nelmts = 17
+function angular_position(points)
+    cpoints = points[1, :] + im * points[2, :]
+    return rad2deg.(angle.(cpoints))
+end
+
+function plot_interface_flux_error(
+    angularposition,
+    fluxerror1,
+    fluxerror2;
+    filename = "",
+    ylim = (),
+)
+    fig, ax = PyPlot.subplots(figsize = (9, 3))
+    ax.plot(angularposition, fluxerror1, label = "core")
+    ax.plot(angularposition, fluxerror2, label = "rim")
+    ax.grid()
+    ax.legend()
+    if length(ylim) > 0
+        ax.set_ylim(ylim)
+    end
+    if length(filename) > 0
+        fig.savefig(filename)
+        return fig
+    else
+        return fig
+    end
+end
+
+
+nelmts = 33
 solverorder = 2
 numqp = required_quadrature_order(solverorder) + 2
 levelsetorder = 2
@@ -59,7 +88,7 @@ k1 = 1.0
 k2 = 2.0
 q1 = 1.0
 q2 = 2.0
-penaltyfactor = 1e1
+penaltyfactor = 1
 beta = 0.5 * [1.0, 1.0]
 
 center = [0.5, 0.5]
@@ -232,26 +261,33 @@ normalflux2 = k2 * vec(mapslices(sum, grads2 .* normals, dims = 1))
 ################################################################################
 
 ################################################################################
-exactflux = -0.5*q1*innerradius
+exactflux = -0.5 * q1 * innerradius
 fluxerror1 = abs.(normalflux1 .- exactflux) ./ abs(exactflux)
 fluxerror2 = abs.(normalflux2 .- exactflux) ./ abs(exactflux)
 ################################################################################
 
+foldername = "LocalDG\\cylindrical-bc-flux\\"
+filename =
+    foldername *
+    "solverorder-" *
+    string(solverorder) *
+    "-nelmts-" *
+    string(nelmts) *
+    ".png"
+plot_interface_flux_error(
+    angularposition,
+    fluxerror1,
+    fluxerror2,
+    ylim = (0, 0.05),
+    filename = filename,
+)
 
-maxerridx = argmax(fluxerror1)
-maxerrcellid = closestcellids[maxerridx]
-cellsign = CutCellDG.cell_sign(mergedmesh,maxerrcellid)
-CutCellDG.load_coefficients!(levelset,maxerrcellid)
-interpolater = CutCellDG.interpolater(levelset)
-
-using Plots
-xrange = -1:1e-1:1
-Plots.contour(xrange,xrange,(x,y)->interpolater([x,y]),levels=[0.0])
-
-# using PyPlot
-# fig, ax = PyPlot.subplots()
-# ax.plot(angularposition, fluxerror1, label = "error 1")
-# ax.plot(angularposition, fluxerror2, label = "error 2")
-# ax.grid()
-# ax.legend()
-# fig
+# maxerridx = argmax(fluxerror1)
+# maxerrcellid = closestcellids[maxerridx]
+# cellsign = CutCellDG.cell_sign(mergedmesh,maxerrcellid)
+# CutCellDG.load_coefficients!(levelset,maxerrcellid)
+# interpolater = CutCellDG.interpolater(levelset)
+#
+# using Plots
+# xrange = -1:1e-1:1
+# Plots.contour(xrange,xrange,(x,y)->interpolater([x,y]),levels=[0.0])

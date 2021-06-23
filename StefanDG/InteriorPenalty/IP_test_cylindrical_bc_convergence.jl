@@ -58,7 +58,7 @@ function measure_error(
     penaltyfactor,
 )
 
-    println("Number of elements = $nelmts")
+    # println("Number of elements = $nelmts")
 
     solverbasis = LagrangeTensorProductBasis(2, solverorder)
     levelsetbasis = LagrangeTensorProductBasis(2, levelsetorder)
@@ -151,7 +151,7 @@ levelsetorder = 2
 k1 = 1.0
 k2 = 2.0
 q1 = 1.0
-q2 = 2.0
+q2 = 0.0
 penaltyfactor = 1e3
 center = [0.5, 0.5]
 innerradius = 0.3
@@ -199,7 +199,7 @@ levelsetorder = 2
 k1 = 1.0
 k2 = 2.0
 q1 = 1.0
-q2 = 2.0
+q2 = 0.0
 penaltyfactor = 1e3
 center = [1.0, 1.0]
 innerradius = 0.25

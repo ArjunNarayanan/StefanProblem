@@ -7,6 +7,7 @@ function assemble_LDG_linear_system!(
     k1,
     k2,
     interiorpenalty,
+    interfacepenalty,
     boundarypenalty,
     beta,
     mesh,
@@ -66,7 +67,7 @@ function assemble_LDG_linear_system!(
         interfacequads,
         k1,
         k2,
-        interiorpenalty,
+        interfacepenalty,
         beta,
         mesh,
     )

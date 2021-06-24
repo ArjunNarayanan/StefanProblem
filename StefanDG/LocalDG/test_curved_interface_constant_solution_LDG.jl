@@ -68,7 +68,7 @@ LocalDG.assemble_LDG_rhs!(
     solverbasis,
     cellquads,
     facequads,
-    inter,
+    boundarypenalty,
     mergedmesh,
 )
 

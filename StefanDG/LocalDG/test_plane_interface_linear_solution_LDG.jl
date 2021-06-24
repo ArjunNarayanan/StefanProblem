@@ -20,7 +20,8 @@ end
 solverorder = 2
 levelsetorder = 1
 nelmts = 5
-penaltyfactor = 1
+boundarypenalty = 1.0
+interiorpenalty = 0.0
 beta = [1.0, 1.0]
 k1 = k2 = 1.0
 
@@ -72,7 +73,8 @@ LocalDG.assemble_LDG_linear_system!(
     interfacequads,
     k1,
     k2,
-    penaltyfactor,
+    interiorpenalty,
+    boundarypenalty,
     beta,
     mergedmesh,
 )
@@ -83,7 +85,7 @@ LocalDG.assemble_LDG_rhs!(
     solverbasis,
     cellquads,
     facequads,
-    penaltyfactor,
+    boundarypenalty,
     mergedmesh,
 )
 

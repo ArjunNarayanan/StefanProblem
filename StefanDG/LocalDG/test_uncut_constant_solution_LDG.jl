@@ -6,19 +6,17 @@ include("../useful_routines.jl")
 
 
 solverorder = 1
-levelsetorder = 2
-nelmts = 5
+levelsetorder = 1
+nelmts = 1
 interiorpenalty = 0.0
 boundarypenalty = 1.0
-beta = 0.5*[1.0, 1.0]
+beta = [1.0, 1.0]
 k1 = k2 = 1.0
 
-center = [1.5,1.0]
-radius = 1.0
-distancefunction(x) = circle_distance_function(x,center,radius)
+distancefunction(x) = ones(size(x)[2])
 
 
-numqp = required_quadrature_order(solverorder)+2
+numqp = required_quadrature_order(solverorder)
 solverbasis = LagrangeTensorProductBasis(2, solverorder)
 levelsetbasis = LagrangeTensorProductBasis(2, levelsetorder)
 
@@ -68,7 +66,7 @@ LocalDG.assemble_LDG_rhs!(
     solverbasis,
     cellquads,
     facequads,
-    inter,
+    boundarypenalty,
     mergedmesh,
 )
 

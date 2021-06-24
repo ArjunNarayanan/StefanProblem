@@ -6,7 +6,8 @@ function assemble_LDG_linear_system!(
     interfacequads,
     k1,
     k2,
-    penaltyfactor,
+    interiorpenalty,
+    boundarypenalty,
     beta,
     mesh,
 )
@@ -44,7 +45,7 @@ function assemble_LDG_linear_system!(
         facequads,
         k1,
         k2,
-        penaltyfactor,
+        interiorpenalty,
         beta,
         mesh,
     )
@@ -65,7 +66,7 @@ function assemble_LDG_linear_system!(
         interfacequads,
         k1,
         k2,
-        penaltyfactor,
+        interiorpenalty,
         beta,
         mesh,
     )
@@ -79,7 +80,7 @@ function assemble_LDG_linear_system!(
         facequads,
         k1,
         k2,
-        penaltyfactor,
+        boundarypenalty,
         mesh,
     )
     ############################################################################
@@ -92,7 +93,7 @@ function assemble_LDG_rhs!(
     solverbasis,
     cellquads,
     facequads,
-    penaltyfactor,
+    boundarypenalty,
     mesh,
 )
 
@@ -110,7 +111,7 @@ function assemble_LDG_rhs!(
         boundaryfunc,
         solverbasis,
         facequads,
-        penaltyfactor,
+        boundarypenalty,
         mesh,
     )
     ################################################################################

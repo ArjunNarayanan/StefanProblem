@@ -122,7 +122,7 @@ rate1 = convergence_rate(dx,err1)
 
 
 ################################################################################
-powers = [1, 2, 3, 4, 5]
+powers = [2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 solverorder = 2
 levelsetorder = 1
@@ -148,12 +148,5 @@ dx = 1.0 ./ nelmts
 rate2 = convergence_rate(dx,err2)
 ################################################################################
 
-
-################################################################################
-using DataFrames, CSV
-df = DataFrame(NElmts = nelmts,linear = err1, quadratic = err2)
-
-foldername = "InteriorPenalty\\uncut_mesh_tests\\"
-filename = foldername *"constant_solution_IP_convergence.csv"
-CSV.write(filename,df)
-################################################################################
+using DataFrames
+# df = DataFrame(NElmts = nelmts,linear = err1, quadratic = err2)

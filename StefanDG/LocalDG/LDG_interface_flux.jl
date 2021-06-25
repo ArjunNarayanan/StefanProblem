@@ -79,8 +79,28 @@ function plot_interface_flux_error(
     end
 end
 
+function plot_interface_flux_error(
+    angularposition,
+    fluxerror;
+    filename = "",
+    ylim = (),
+)
+    fig, ax = PyPlot.subplots(figsize = (9, 3))
+    ax.plot(angularposition, fluxerror)
+    ax.grid()
+    if length(ylim) > 0
+        ax.set_ylim(ylim)
+    end
+    if length(filename) > 0
+        fig.savefig(filename)
+        return fig
+    else
+        return fig
+    end
+end
 
-nelmts = 33
+
+nelmts = 17
 solverorder = 2
 numqp = required_quadrature_order(solverorder) + 2
 levelsetorder = 2
@@ -88,8 +108,13 @@ k1 = 1.0
 k2 = 2.0
 q1 = 1.0
 q2 = 2.0
-penaltyfactor = 1
-beta = 0.5 * [1.0, 1.0]
+
+interiorpenalty = 0
+interfacepenalty = 1e3
+boundarypenalty = 1
+
+V0angle = -45.0
+V0 = [cosd(V0angle), sind(V0angle)]
 
 center = [0.5, 0.5]
 innerradius = 0.3
@@ -153,8 +178,10 @@ LocalDG.assemble_LDG_linear_system!(
     interfacequads,
     k1,
     k2,
-    penaltyfactor,
-    beta,
+    interiorpenalty,
+    interfacepenalty,
+    boundarypenalty,
+    V0,
     mergedmesh,
 )
 LocalDG.assemble_LDG_rhs!(
@@ -164,7 +191,7 @@ LocalDG.assemble_LDG_rhs!(
     solverbasis,
     cellquads,
     facequads,
-    penaltyfactor,
+    boundarypenalty,
     mergedmesh,
 )
 assemble_two_phase_source!(
@@ -264,23 +291,41 @@ normalflux2 = k2 * vec(mapslices(sum, grads2 .* normals, dims = 1))
 exactflux = -0.5 * q1 * innerradius
 fluxerror1 = abs.(normalflux1 .- exactflux) ./ abs(exactflux)
 fluxerror2 = abs.(normalflux2 .- exactflux) ./ abs(exactflux)
-################################################################################
+# ################################################################################
 
-foldername = "LocalDG\\cylindrical-bc-flux\\"
-filename =
-    foldername *
-    "solverorder-" *
-    string(solverorder) *
-    "-nelmts-" *
-    string(nelmts) *
-    ".png"
+
+# ################################################################################
+# Numerical flux
+beta = LocalDG.edge_switch(V0, normals)
+betaqn = beta .* (-normalflux1' + normalflux2')
+numericalflux = 0.5 * (k1 * grads1 + k2 * grads2) - betaqn
+numericalnormalflux = vec(mapslices(sum, numericalflux .* normals, dims = 1))
+numericalnormalfluxerror =
+    abs.(numericalnormalflux .- exactflux) ./ abs(exactflux)
+# ################################################################################
+
 plot_interface_flux_error(
     angularposition,
-    fluxerror1,
-    fluxerror2,
-    ylim = (0, 0.05),
-    filename = filename,
+    numericalnormalfluxerror,
+    ylim = (0.0, 0.05),
 )
+
+# foldername = "LocalDG\\cylindrical-bc-flux\\"
+# filename =
+#     foldername *
+#     "solverorder-" *
+#     string(solverorder) *
+#     "-nelmts-" *
+#     string(nelmts) *
+#     ".png"
+# plot_interface_flux_error(
+#     angularposition,
+#     fluxerror1,
+#     fluxerror2,
+#     ylim = (0, 0.05),
+#     # filename = filename,
+# )
+
 
 # maxerridx = argmax(fluxerror1)
 # maxerrcellid = closestcellids[maxerridx]

@@ -2,70 +2,23 @@ using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
 include("local_DG.jl")
-include("../cylinder-analytical-solution.jl")
 include("../useful_routines.jl")
 
-function assemble_two_phase_source!(
-    systemrhs,
-    rhsfunc1,
-    rhsfunc2,
-    basis,
-    cellquads,
-    mesh,
-)
-
-    ncells = CutCellDG.number_of_cells(mesh)
-    for cellid = 1:ncells
-        cellsign = CutCellDG.cell_sign(mesh, cellid)
-        CutCellDG.check_cellsign(cellsign)
-
-        if cellsign == +1 || cellsign == 0
-            LocalDG.assemble_cell_source!(
-                systemrhs,
-                rhsfunc1,
-                basis,
-                cellquads,
-                mesh,
-                +1,
-                cellid,
-            )
-        end
-        if cellsign == -1 || cellsign == 0
-            LocalDG.assemble_cell_source!(
-                systemrhs,
-                rhsfunc2,
-                basis,
-                cellquads,
-                mesh,
-                -1,
-                cellid,
-            )
-        end
-    end
+function exact_solution(v)
+    x, y = v
+    return cos(2pi * x) * sin(2pi * y)
 end
 
-function (solver::AnalyticalSolution.CylindricalSolver)(x, center)
-    dx = x - center
-    r = sqrt(dx' * dx)
-    return AnalyticalSolution.analytical_solution(r, solver)
+function exact_gradient(v)
+    x, y = v
+    gx = -2pi * sin(2pi * x) * sin(2pi * y)
+    gy = 2pi * cos(2pi * x) * cos(2pi * y)
+    return [gx, gy]
 end
 
-function analytical_gradient(
-    solver::AnalyticalSolution.CylindricalSolver,
-    x,
-    center,
-)
-
-    dx = x - center
-    theta = angle(dx[1] + im * dx[2])
-    r = sqrt(dx' * dx)
-
-    Tr = AnalyticalSolution.analytical_radial_derivative(r, solver)
-
-    Tx = Tr * cos(theta)
-    Ty = Tr * sin(theta)
-
-    return [Tx, Ty]
+function source_term(v, k)
+    x, y = v
+    return 8pi^2 * k * cos(2pi * x) * sin(2pi * y)
 end
 
 function measure_error(
@@ -74,8 +27,7 @@ function measure_error(
     numqp,
     levelsetorder,
     distancefunction,
-    rhsfunc1,
-    rhsfunc2,
+    sourceterm,
     exactsolution,
     exactgradient,
     k1,
@@ -102,9 +54,6 @@ function measure_error(
     )
     levelset = CutCellDG.LevelSet(distancefunction, cgmesh, levelsetbasis)
     minelmtsize = minimum(CutCellDG.element_size(dgmesh))
-
-    # penalty = penaltyfactor
-    # penalty = penaltyfactor / minelmtsize * 0.5 * (k1 + k2)
 
     cutmesh = CutCellDG.CutMesh(dgmesh, levelset)
     cellquads = CutCellDG.CellQuadratures(cutmesh, levelset, numqp)
@@ -135,20 +84,12 @@ function measure_error(
 
     LocalDG.assemble_LDG_rhs!(
         sysrhs,
-        x -> 0.0,
+        sourceterm,
         exactsolution,
         solverbasis,
         cellquads,
         facequads,
         boundarypenalty,
-        mergedmesh,
-    )
-    assemble_two_phase_source!(
-        sysrhs,
-        rhsfunc1,
-        rhsfunc2,
-        solverbasis,
-        cellquads,
         mergedmesh,
     )
     ################################################################################
@@ -168,7 +109,6 @@ function measure_error(
     Tnorm = integral_norm_on_mesh(exactsolution, cellquads, mergedmesh, 1)
     Gnorm = integral_norm_on_mesh(exactgradient, cellquads, mergedmesh, 2)
 
-    # return errT[1] / Tnorm[1]
     return errT[1] / Tnorm[1], errG ./ Gnorm
 end
 
@@ -179,34 +119,17 @@ end
 powers = [2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 solverorder = 1
-numqp = required_quadrature_order(solverorder) + 2
-levelsetorder = 2
-k1 = 1.0
-k2 = 2.0
-q1 = 1.0
-q2 = 0.0
-Tw = 1.0
-
-center = [0.5, 0.5]
-innerradius = 0.3
-outerradius = 1.0
-
-interiorpenalty = 0.0
-interfacepenalty = 0.0
+numqp = required_quadrature_order(solverorder)+2
+levelsetorder = 1
+k1 = k2 = 1.0
 boundarypenalty = 1.0
+interfacepenalty = 0.0
+interiorpenalty = 0.0
 V0 = [1.0, 1.0]
 
-distancefunction(x) = circle_distance_function(x, center, innerradius)
-analyticalsolution = AnalyticalSolution.CylindricalSolver(
-    q1,
-    k1,
-    q2,
-    k2,
-    innerradius,
-    outerradius,
-    Tw,
-)
-
+center = [1.5,1.0]
+radius = 1.0
+distancefunction(x) = circle_distance_function(x,center,radius)
 
 err1 = [
     measure_error(
@@ -215,10 +138,9 @@ err1 = [
         numqp,
         levelsetorder,
         distancefunction,
-        x -> q1,
-        x -> q2,
-        x -> analyticalsolution(x, center),
-        x -> analytical_gradient(analyticalsolution, x, center),
+        x -> source_term(x, k1),
+        exact_solution,
+        exact_gradient,
         k1,
         k2,
         interiorpenalty,
@@ -231,8 +153,6 @@ err1 = [
 err1T = [er[1] for er in err1]
 err1G1 = [er[2][1] for er in err1]
 err1G2 = [er[2][2] for er in err1]
-
-err1 = hcat(err1T,err1G1,err1G2)
 
 dx = 1.0 ./ nelmts
 
@@ -247,35 +167,17 @@ G2rate1 = convergence_rate(dx, err1G2)
 powers = [2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 solverorder = 2
-numqp = required_quadrature_order(solverorder) + 2
+numqp = required_quadrature_order(solverorder)+2
 levelsetorder = 2
-k1 = 1.0
-k2 = 2.0
-q1 = 1.0
-q2 = 0.0
-Tw = 1.0
-
-center = [0.5, 0.5]
-innerradius = 0.3
-outerradius = 1.0
-
-interiorpenalty = 0.0
-interfacepenalty = 0.0
+k1 = k2 = 1.0
 boundarypenalty = 1.0
-
+interfacepenalty = 0.0
+interiorpenalty = 0.0
 V0 = [1.0, 1.0]
 
-
-distancefunction(x) = circle_distance_function(x, center, innerradius)
-analyticalsolution = AnalyticalSolution.CylindricalSolver(
-    q1,
-    k1,
-    q2,
-    k2,
-    innerradius,
-    outerradius,
-    Tw,
-)
+center = [1.0,1.0]
+radius = 0.7
+distancefunction(x) = circle_distance_function(x,center,radius)
 
 err2 = [
     measure_error(
@@ -284,10 +186,9 @@ err2 = [
         numqp,
         levelsetorder,
         distancefunction,
-        x -> q1,
-        x -> q2,
-        x -> analyticalsolution(x, center),
-        x -> analytical_gradient(analyticalsolution, x, center),
+        x -> source_term(x, k1),
+        exact_solution,
+        exact_gradient,
         k1,
         k2,
         interiorpenalty,
@@ -300,8 +201,6 @@ err2 = [
 err2T = [er[1] for er in err2]
 err2G1 = [er[2][1] for er in err2]
 err2G2 = [er[2][2] for er in err2]
-
-err2 = hcat(err2T,err2G1,err2G2)
 
 dx = 1.0 ./ nelmts
 

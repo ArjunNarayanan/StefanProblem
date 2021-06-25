@@ -20,9 +20,9 @@ end
 solverorder = 1
 levelsetorder = 2
 nelmts = 5
-boundarypenalty = 1.0
-interfacepenalty = 0.0
 interiorpenalty = 0.0
+interfacepenalty = 0.0
+boundarypenalty = 1.0
 V0 = [1.0, 1.0]
 k1 = k2 = 1.0
 

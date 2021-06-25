@@ -17,6 +17,7 @@ end
 
 function assemble_source!(systemrhs, rhsfunc, basis, cellquads, mesh)
     ncells = CutCellDG.number_of_cells(mesh)
+
     for cellid = 1:ncells
         cellsign = CutCellDG.cell_sign(mesh, cellid)
         CutCellDG.check_cellsign(cellsign)

@@ -100,15 +100,15 @@ function plot_interface_flux_error(
 end
 
 
-nelmts = 33
-solverorder = 2
+nelmts = 17
+solverorder = 3
 numqp = required_quadrature_order(solverorder) + 2
 levelsetorder = 2
 k1 = 1.0
 k2 = 2.0
 q1 = 1.0
 q2 = 0.0
-penaltyfactor = 1e3
+penaltyfactor = 1e2
 center = [0.5, 0.5]
 innerradius = 0.4
 outerradius = 1.0
@@ -284,32 +284,32 @@ fluxerror2 = abs.(normalflux2 .- exactflux) ./ abs(exactflux)
 meanfluxerror = abs.(meanflux .- exactflux) ./ abs(exactflux)
 ################################################################################
 
-foldername = "InteriorPenalty\\cylindrical-bc-flux\\"
-filename =
-    foldername *
-    "solverorder-" *
-    string(solverorder) *
-    "-nelmts-" *
-    string(nelmts) *
-    ".png"
-plot_interface_flux_error(
-    angularposition,
-    fluxerror1,
-    fluxerror2,
-    filename = filename,
-    ylim = (0, 0.05),
-)
+# foldername = "InteriorPenalty\\cylindrical-bc-flux\\"
+# filename =
+#     foldername *
+#     "solverorder-" *
+#     string(solverorder) *
+#     "-nelmts-" *
+#     string(nelmts) *
+#     ".png"
+# plot_interface_flux_error(
+#     angularposition,
+#     fluxerror1,
+#     fluxerror2,
+#     filename = filename,
+#     ylim = (0, 0.05),
+# )
 
-filename =
-    foldername *
-    "solverorder-" *
-    string(solverorder) *
-    "-nelmts-" *
-    string(nelmts) *
-    "-mean-flux.png"
+# filename =
+#     foldername *
+#     "solverorder-" *
+#     string(solverorder) *
+#     "-nelmts-" *
+#     string(nelmts) *
+#     "-mean-flux.png"
 plot_interface_flux_error(
     angularposition,
     meanfluxerror,
-    filename = filename,
+    # filename = filename,
     ylim = (0, 0.05),
 )

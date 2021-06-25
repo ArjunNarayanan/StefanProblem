@@ -1,11 +1,12 @@
 using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
-include("interior_penalty.jl")
-include("../useful_routines.jl")
+include("../interior_penalty.jl")
+include("../../useful_routines.jl")
 
 function exact_solution(v)
-    return 1.0
+    x, y = v
+    return 3x + 4y
 end
 
 function source_term(v, k)
@@ -13,14 +14,15 @@ function source_term(v, k)
 end
 
 k1 = k2 = 1.0
-solverorder = 2
+solverorder = 1
 levelsetorder = 1
-nelmts = 10
+nelmts = 33
 penaltyfactor = 1e3
 numqp = required_quadrature_order(solverorder)
 solverbasis = LagrangeTensorProductBasis(2, solverorder)
 levelsetbasis = LagrangeTensorProductBasis(2, levelsetorder)
 
+distancefunction(x) = ones(size(x)[2])
 
 dgmesh = CutCellDG.DGMesh(
     [0.0, 0.0],
@@ -34,9 +36,9 @@ cgmesh = CutCellDG.CGMesh(
     [nelmts, nelmts],
     number_of_basis_functions(levelsetbasis),
 )
-levelset = CutCellDG.LevelSet(x -> ones(size(x)[2]), cgmesh, levelsetbasis)
+levelset = CutCellDG.LevelSet(distancefunction, cgmesh, levelsetbasis)
 minelmtsize = minimum(CutCellDG.element_size(dgmesh))
-penalty = penaltyfactor/minelmtsize
+penalty = penaltyfactor / minelmtsize
 
 cutmesh = CutCellDG.CutMesh(dgmesh, levelset)
 cellquads = CutCellDG.CellQuadratures(cutmesh, levelset, numqp)
@@ -45,7 +47,6 @@ interfacequads = CutCellDG.InterfaceQuadratures(cutmesh, levelset, numqp)
 
 mergedmesh =
     CutCellDG.MergedMesh!(cutmesh, cellquads, facequads, interfacequads)
-
 
 sysmatrix = CutCellDG.SystemMatrix()
 sysrhs = CutCellDG.SystemRHS()
@@ -60,6 +61,10 @@ InteriorPenalty.assemble_gradient_operator!(
     k2,
     mergedmesh,
 )
+################################################################################
+
+################################################################################
+# INTERELEMENT CONDITION
 InteriorPenalty.assemble_interelement_flux_operator!(
     sysmatrix,
     solverbasis,
@@ -75,11 +80,29 @@ InteriorPenalty.assemble_interelement_penalty_operator!(
     penalty,
     mergedmesh,
 )
+# ################################################################################
+
+################################################################################
+# INTERFACE CONDITION
+InteriorPenalty.assemble_interface_flux_operator!(
+    sysmatrix,
+    solverbasis,
+    interfacequads,
+    k1,
+    k2,
+    mergedmesh,
+)
+InteriorPenalty.assemble_interface_penalty_operator!(
+    sysmatrix,
+    solverbasis,
+    interfacequads,
+    penalty,
+    mergedmesh,
+)
 ################################################################################
 
-
-################################################################################
-# BOUNDARY CONDITIONS
+# ################################################################################
+# # BOUNDARY CONDITIONS
 InteriorPenalty.assemble_boundary_flux_operator!(
     sysmatrix,
     solverbasis,
@@ -103,8 +126,8 @@ InteriorPenalty.assemble_boundary_source!(
     penalty,
     mergedmesh,
 )
-################################################################################
-# SOURCE TERM
+# ################################################################################
+# # SOURCE TERM
 InteriorPenalty.assemble_source!(
     sysrhs,
     x -> [source_term(x, k1)],
@@ -112,9 +135,9 @@ InteriorPenalty.assemble_source!(
     cellquads,
     cutmesh,
 )
-################################################################################
-
-################################################################################
+# ################################################################################
+#
+# ################################################################################
 matrix = CutCellDG.sparse_operator(sysmatrix, mergedmesh, 1)
 rhs = CutCellDG.rhs_vector(sysrhs, mergedmesh, 1)
 

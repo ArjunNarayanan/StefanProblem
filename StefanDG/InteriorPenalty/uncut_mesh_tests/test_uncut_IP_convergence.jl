@@ -1,8 +1,8 @@
 using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
-include("interior_penalty.jl")
-include("../useful_routines.jl")
+include("../interior_penalty.jl")
+include("../../useful_routines.jl")
 
 function exact_solution(v)
     x, y = v
@@ -124,29 +124,28 @@ rate1 = convergence_rate(dx,IPerr1)
 
 
 ################################################################################
-# powers = [2, 3, 4, 5]
-# nelmts = 2 .^ powers .+ 1
-# solverorder = 2
-# levelsetorder = 1
-# k1 = k2 = 1.0
-# penaltyfactor = 1e3
-# # distancefunction(x) = plane_distance_function(x, [1.0, 0.0], [0.5, 0.0])
-# distancefunction(x) = circle_distance_function(x,[0.5,0.5],0.25)
-#
-# err2 = [
-#     measure_error(
-#         ne,
-#         solverorder,
-#         levelsetorder,
-#         distancefunction,
-#         x -> [source_term(x, k1)],
-#         exact_solution,
-#         k1,
-#         k2,
-#         penaltyfactor,
-#     ) for ne in nelmts
-# ]
-#
-# dx = 1.0 ./ nelmts
-# rate2 = convergence_rate(dx,err2)
+powers = [2, 3, 4, 5]
+nelmts = 2 .^ powers .+ 1
+solverorder = 2
+levelsetorder = 1
+k1 = k2 = 1.0
+penaltyfactor = 1e3
+distancefunction(x) = ones(size(x)[2])
+
+err2 = [
+    measure_error(
+        ne,
+        solverorder,
+        levelsetorder,
+        distancefunction,
+        x -> [source_term(x, k1)],
+        exact_solution,
+        k1,
+        k2,
+        penaltyfactor,
+    ) for ne in nelmts
+]
+
+dx = 1.0 ./ nelmts
+rate2 = convergence_rate(dx,err2)
 ################################################################################

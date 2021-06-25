@@ -33,8 +33,9 @@ function measure_error(
     k1,
     k2,
     interiorpenalty,
+    interfacepenalty,
     boundarypenalty,
-    beta,
+    V0,
 )
     solverbasis = LagrangeTensorProductBasis(2, solverorder)
     levelsetbasis = LagrangeTensorProductBasis(2, levelsetorder)
@@ -75,8 +76,9 @@ function measure_error(
         k1,
         k2,
         interiorpenalty,
+        interfacepenalty,
         boundarypenalty,
-        beta,
+        V0,
         mergedmesh,
     )
 
@@ -121,8 +123,9 @@ numqp = required_quadrature_order(solverorder)
 levelsetorder = 1
 k1 = k2 = 1.0
 boundarypenalty = 1.0
+interfacepenalty = 0.0
 interiorpenalty = 0.0
-beta = 0.5 * [1.0, 1.0]
+V0 = [1.0, 1.0]
 
 
 interfaceangle = 30.0
@@ -144,8 +147,9 @@ err1 = [
         k1,
         k2,
         interiorpenalty,
+        interfacepenalty,
         boundarypenalty,
-        beta,
+        V0,
     ) for ne in nelmts
 ]
 
@@ -170,8 +174,9 @@ numqp = required_quadrature_order(solverorder)+2
 levelsetorder = 2
 k1 = k2 = 1.0
 boundarypenalty = 1.0
+interfacepenalty = 1.0
 interiorpenalty = 0.0
-beta = 0.5 * [1.0, 1.0]
+V0 = [1.0, 1.0]
 
 interfaceangle = 45.0
 interfacepoint = [0.8, 0.0]
@@ -192,8 +197,9 @@ err2 = [
         k1,
         k2,
         interiorpenalty,
+        interfacepenalty,
         boundarypenalty,
-        beta,
+        V0,
     ) for ne in nelmts
 ]
 

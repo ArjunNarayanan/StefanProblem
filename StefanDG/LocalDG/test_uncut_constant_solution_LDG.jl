@@ -5,12 +5,13 @@ include("local_DG.jl")
 include("../useful_routines.jl")
 
 
-solverorder = 1
+solverorder = 2
 levelsetorder = 1
-nelmts = 1
+nelmts = 5
 interiorpenalty = 0.0
+interfacepenalty = 1.0
 boundarypenalty = 1.0
-beta = [1.0, 1.0]
+V0 = [1.0, 1.0]
 k1 = k2 = 1.0
 
 distancefunction(x) = ones(size(x)[2])
@@ -55,8 +56,9 @@ LocalDG.assemble_LDG_linear_system!(
     k1,
     k2,
     interiorpenalty,
+    interfacepenalty,
     boundarypenalty,
-    beta,
+    V0,
     mergedmesh,
 )
 LocalDG.assemble_LDG_rhs!(

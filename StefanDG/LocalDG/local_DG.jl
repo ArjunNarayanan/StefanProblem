@@ -2,6 +2,7 @@ module LocalDG
 using PolynomialBasis
 using CutCellDG
 
+include("LDG_utilities.jl")
 include("LDG_div_operator.jl")
 include("LDG_mass_operator.jl")
 include("LDG_gradient_operator.jl")

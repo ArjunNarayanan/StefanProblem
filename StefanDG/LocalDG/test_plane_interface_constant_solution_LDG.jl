@@ -7,13 +7,14 @@ include("../useful_routines.jl")
 
 solverorder = 2
 levelsetorder = 1
-nelmts = 9
+nelmts = 20
 interiorpenalty = 0.0
+interfacepenalty = 0.0
 boundarypenalty = 1.0
-beta = [1.0, 1.0]
+V0 = [1.0, 1.0]
 k1 = k2 = 1.0
 
-interfaceangle = 45.0
+interfaceangle = 30.0
 interfacepoint = [0.5, 0.0]
 interfacenormal = [cosd(interfaceangle), sind(interfaceangle)]
 distancefunction(x) =
@@ -59,8 +60,9 @@ LocalDG.assemble_LDG_linear_system!(
     k1,
     k2,
     interiorpenalty,
+    interfacepenalty,
     boundarypenalty,
-    beta,
+    V0,
     mergedmesh,
 )
 LocalDG.assemble_LDG_rhs!(

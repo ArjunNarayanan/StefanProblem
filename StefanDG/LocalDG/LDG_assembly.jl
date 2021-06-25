@@ -9,7 +9,7 @@ function assemble_LDG_linear_system!(
     interiorpenalty,
     interfacepenalty,
     boundarypenalty,
-    beta,
+    V0,
     mesh,
 )
     ############################################################################
@@ -37,7 +37,7 @@ function assemble_LDG_linear_system!(
         sysmatrix,
         solverbasis,
         facequads,
-        beta,
+        V0,
         mesh,
     )
     LocalDG.assemble_interelement_vector_flux_operator!(
@@ -47,7 +47,7 @@ function assemble_LDG_linear_system!(
         k1,
         k2,
         interiorpenalty,
-        beta,
+        V0,
         mesh,
     )
     ############################################################################
@@ -58,7 +58,7 @@ function assemble_LDG_linear_system!(
         sysmatrix,
         solverbasis,
         interfacequads,
-        beta,
+        V0,
         mesh,
     )
     LocalDG.assemble_interface_vector_flux_operator!(
@@ -68,7 +68,7 @@ function assemble_LDG_linear_system!(
         k1,
         k2,
         interfacepenalty,
-        beta,
+        V0,
         mesh,
     )
     ############################################################################

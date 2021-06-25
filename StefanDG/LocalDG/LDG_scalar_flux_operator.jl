@@ -28,7 +28,7 @@ function assemble_face_scalar_flux_operator!(
     quad1,
     quad2,
     normals,
-    beta,
+    V0,
     scaleareas,
     nodeids1,
     nodeids2,
@@ -60,7 +60,9 @@ function assemble_face_scalar_flux_operator!(
         M12,
     )
 
-    bp = normals' * beta
+    beta = edge_switch(V0,normals)
+
+    bp = vec(mapslices(sum,beta .* normals,dims=1))
     bm = -bp
 
     N11 =
@@ -112,7 +114,7 @@ function assemble_face_interelement_scalar_flux_operator!(
     quad1,
     quad2,
     normal,
-    beta,
+    V0,
     facedetjac,
     nodeids1,
     nodeids2,
@@ -128,7 +130,7 @@ function assemble_face_interelement_scalar_flux_operator!(
         quad1,
         quad2,
         normals,
-        beta,
+        V0,
         scaleareas,
         nodeids1,
         nodeids2,
@@ -140,7 +142,7 @@ function assemble_cut_cell_interelement_scalar_flux_operator!(
     basis,
     facequads,
     normals,
-    beta,
+    V0,
     mesh,
     cellsign,
     cellid,
@@ -172,7 +174,7 @@ function assemble_cut_cell_interelement_scalar_flux_operator!(
                     quad1,
                     quad2,
                     normals[faceid],
-                    beta,
+                    V0,
                     facedetjac[faceid],
                     nodeids1,
                     nodeids2,
@@ -186,7 +188,7 @@ function assemble_interelement_scalar_flux_operator!(
     sysmatrix,
     basis,
     facequads,
-    beta,
+    V0,
     mesh,
 )
 
@@ -207,7 +209,7 @@ function assemble_interelement_scalar_flux_operator!(
                 basis,
                 facequads,
                 normals,
-                beta,
+                V0,
                 mesh,
                 +1,
                 cellid,
@@ -222,7 +224,7 @@ function assemble_interelement_scalar_flux_operator!(
                 basis,
                 facequads,
                 normals,
-                beta,
+                V0,
                 mesh,
                 -1,
                 cellid,
@@ -241,7 +243,7 @@ function assemble_cell_interface_scalar_flux_operator!(
     sysmatrix,
     basis,
     interfacequads,
-    beta,
+    V0,
     mesh,
     cellid,
 )
@@ -262,7 +264,7 @@ function assemble_cell_interface_scalar_flux_operator!(
         quad1,
         quad2,
         posnormals,
-        beta,
+        V0,
         scaleareas,
         nodeids1,
         nodeids2,
@@ -273,7 +275,7 @@ function assemble_cell_interface_scalar_flux_operator!(
         quad2,
         quad1,
         negnormals,
-        beta,
+        V0,
         scaleareas,
         nodeids2,
         nodeids1,
@@ -284,7 +286,7 @@ function assemble_interface_scalar_flux_operator!(
     sysmatrix,
     basis,
     interfacequads,
-    beta,
+    V0,
     mesh,
 )
 
@@ -298,7 +300,7 @@ function assemble_interface_scalar_flux_operator!(
                 sysmatrix,
                 basis,
                 interfacequads,
-                beta,
+                V0,
                 mesh,
                 cellid,
             )

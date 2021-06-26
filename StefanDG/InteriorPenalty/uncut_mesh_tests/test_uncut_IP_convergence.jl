@@ -95,7 +95,7 @@ function measure_error(
 end
 
 ################################################################################
-powers = [2, 3, 4, 5]
+powers = [1, 2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 solverorder = 1
 levelsetorder = 1
@@ -103,7 +103,7 @@ k1 = k2 = 1.0
 penaltyfactor = 1e3
 distancefunction(x) = ones(size(x)[2])
 
-IPerr1 = [
+err1 = [
     measure_error(
         ne,
         solverorder,
@@ -118,13 +118,13 @@ IPerr1 = [
 ]
 
 dx = 1.0 ./ nelmts
-rate1 = convergence_rate(dx,IPerr1)
+rate1 = convergence_rate(dx,err1)
 ################################################################################
 
 
 
 ################################################################################
-powers = [2, 3, 4, 5]
+powers = [1, 2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 solverorder = 2
 levelsetorder = 1
@@ -148,4 +148,15 @@ err2 = [
 
 dx = 1.0 ./ nelmts
 rate2 = convergence_rate(dx,err2)
+################################################################################
+
+
+
+################################################################################
+using DataFrames, CSV
+df = DataFrame(NElmts = nelmts,linear = err1, quadratic = err2)
+
+foldername = "InteriorPenalty\\uncut_mesh_tests\\"
+filename = foldername *"IP_convergence.csv"
+CSV.write(filename,df)
 ################################################################################

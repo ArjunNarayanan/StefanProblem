@@ -394,12 +394,16 @@ function assemble_boundary_face_vector_flux_operator!(
     quad,
     normal,
     conductivity,
-    alpha,
+    negboundarypenalty,
+    posboundarypenalty,
+    V0,
     facedetjac,
     nodeids,
 )
 
     numqp = length(quad)
+    V0nk = V0'*normal
+    alpha = V0nk < 0 ? negboundarypenalty : posboundarypenalty
 
     if numqp > 0
         posnormals = repeat(normal, inner = (1, numqp))
@@ -440,7 +444,9 @@ function assemble_boundary_cell_vector_flux_operator!(
     facequads,
     normals,
     conductivity,
-    alpha,
+    negboundarypenalty,
+    posboundarypenalty,
+    V0,
     mesh,
     cellsign,
     cellid,
@@ -459,7 +465,9 @@ function assemble_boundary_cell_vector_flux_operator!(
                 quad,
                 normals[faceid],
                 conductivity,
-                alpha,
+                negboundarypenalty,
+                posboundarypenalty,
+                V0,
                 facedetjac[faceid],
                 nodeids,
             )
@@ -473,7 +481,9 @@ function assemble_boundary_vector_flux_operator!(
     facequads,
     k1,
     k2,
-    alpha,
+    negboundarypenalty,
+    posboundarypenalty,
+    V0,
     mesh,
 )
 
@@ -494,7 +504,9 @@ function assemble_boundary_vector_flux_operator!(
                 facequads,
                 normals,
                 k1,
-                alpha,
+                negboundarypenalty,
+                posboundarypenalty,
+                V0,
                 mesh,
                 +1,
                 cellid,
@@ -509,7 +521,9 @@ function assemble_boundary_vector_flux_operator!(
                 facequads,
                 normals,
                 k2,
-                alpha,
+                negboundarypenalty,
+                posboundarypenalty,
+                V0,
                 mesh,
                 -1,
                 cellid,

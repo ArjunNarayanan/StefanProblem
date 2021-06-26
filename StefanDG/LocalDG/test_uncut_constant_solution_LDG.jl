@@ -9,8 +9,9 @@ solverorder = 2
 levelsetorder = 1
 nelmts = 5
 interiorpenalty = 0.0
-interfacepenalty = 1.0
-boundarypenalty = 1.0
+interfacepenalty = 0.0
+negboundarypenalty = 0.0
+posboundarypenalty = 1.0
 V0 = [1.0, 1.0]
 k1 = k2 = 1.0
 
@@ -57,7 +58,8 @@ LocalDG.assemble_LDG_linear_system!(
     k2,
     interiorpenalty,
     interfacepenalty,
-    boundarypenalty,
+    negboundarypenalty,
+    posboundarypenalty,
     V0,
     mergedmesh,
 )
@@ -68,7 +70,9 @@ LocalDG.assemble_LDG_rhs!(
     solverbasis,
     cellquads,
     facequads,
-    boundarypenalty,
+    negboundarypenalty,
+    posboundarypenalty,
+    V0,
     mergedmesh,
 )
 

@@ -5,8 +5,7 @@ include("../interior_penalty.jl")
 include("../../useful_routines.jl")
 
 function exact_solution(v)
-    x, y = v
-    return 3x + 4y
+    return 1.0
 end
 
 function source_term(v, k)
@@ -100,6 +99,8 @@ solverorder = 1
 levelsetorder = 1
 k1 = k2 = 1.0
 penaltyfactor = 1e3
+
+
 distancefunction(x) = ones(size(x)[2])
 
 err1 = [
@@ -150,12 +151,11 @@ rate2 = convergence_rate(dx,err2)
 ################################################################################
 
 
-
 ################################################################################
 using DataFrames, CSV
 df = DataFrame(NElmts = nelmts,linear = err1, quadratic = err2)
 
 foldername = "InteriorPenalty\\uncut_mesh_tests\\"
-filename = foldername *"linear_solution_IP_convergence.csv"
+filename = foldername *"constant_solution_IP_convergence.csv"
 CSV.write(filename,df)
 ################################################################################

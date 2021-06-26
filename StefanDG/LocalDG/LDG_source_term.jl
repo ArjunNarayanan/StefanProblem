@@ -206,11 +206,16 @@ function assemble_boundary_face_vector_flux_source!(
     basis,
     quad,
     normal,
-    alpha,
+    negboundarypenalty,
+    posboundarypenalty,
+    V0,
     cellmap,
     facedetjac,
     nodeids,
 )
+
+    V0nk = V0'*normal
+    alpha = V0nk < 0 ? negboundarypenalty : posboundarypenalty
 
     nnp = (-normal)' * normal
     rhs = -alpha * linear_form(rhsfunc, basis, quad, cellmap, nnp * facedetjac)
@@ -223,7 +228,9 @@ function assemble_boundary_cell_vector_flux_source!(
     basis,
     facequads,
     normals,
-    alpha,
+    negboundarypenalty,
+    posboundarypenalty,
+    V0,
     mesh,
     cellsign,
     cellid,
@@ -244,7 +251,9 @@ function assemble_boundary_cell_vector_flux_source!(
                 basis,
                 quad,
                 normals[faceid],
-                alpha,
+                negboundarypenalty,
+                posboundarypenalty,
+                V0,
                 cellmap,
                 facedetjac[faceid],
                 nodeids,
@@ -258,7 +267,9 @@ function assemble_boundary_vector_flux_source!(
     rhsfunc,
     basis,
     facequads,
-    alpha,
+    negboundarypenalty,
+    posboundarypenalty,
+    V0,
     mesh,
 )
 
@@ -279,7 +290,9 @@ function assemble_boundary_vector_flux_source!(
                 basis,
                 facequads,
                 normals,
-                alpha,
+                negboundarypenalty,
+                posboundarypenalty,
+                V0,
                 mesh,
                 +1,
                 cellid,
@@ -294,7 +307,9 @@ function assemble_boundary_vector_flux_source!(
                 basis,
                 facequads,
                 normals,
-                alpha,
+                negboundarypenalty,
+                posboundarypenalty,
+                V0,
                 mesh,
                 -1,
                 cellid,

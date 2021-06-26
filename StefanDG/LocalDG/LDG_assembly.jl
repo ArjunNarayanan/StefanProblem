@@ -8,7 +8,8 @@ function assemble_LDG_linear_system!(
     k2,
     interiorpenalty,
     interfacepenalty,
-    boundarypenalty,
+    negboundarypenalty,
+    posboundarypenalty,
     V0,
     mesh,
 )
@@ -81,7 +82,9 @@ function assemble_LDG_linear_system!(
         facequads,
         k1,
         k2,
-        boundarypenalty,
+        negboundarypenalty,
+        posboundarypenalty,
+        V0,
         mesh,
     )
     ############################################################################
@@ -94,7 +97,9 @@ function assemble_LDG_rhs!(
     solverbasis,
     cellquads,
     facequads,
-    boundarypenalty,
+    negboundarypenalty,
+    posboundarypenalty,
+    V0,
     mesh,
 )
 
@@ -112,7 +117,9 @@ function assemble_LDG_rhs!(
         boundaryfunc,
         solverbasis,
         facequads,
-        boundarypenalty,
+        negboundarypenalty,
+        posboundarypenalty,
+        V0,
         mesh,
     )
     ################################################################################

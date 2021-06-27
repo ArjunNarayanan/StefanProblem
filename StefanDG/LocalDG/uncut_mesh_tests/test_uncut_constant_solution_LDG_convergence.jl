@@ -158,18 +158,8 @@ LDGerr1G2 = [er[2][2] for er in LDGerr1]
 
 
 ################################################################################
-powers = [1, 2, 3, 4, 5]
-nelmts = 2 .^ powers .+ 1
 solverorder = 2
 numqp = required_quadrature_order(solverorder)+2
-levelsetorder = 2
-k1 = k2 = 1.0
-interiorpenalty = 0.0
-interfacepenalty = 0.0
-negboundarypenalty = 0.0
-posboundarypenalty = 1.0
-theta = 45
-V0 = [cosd(theta), sind(theta)]
 
 distancefunction(x) = ones(size(x)[2])
 

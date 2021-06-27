@@ -125,10 +125,11 @@ powers = [1, 2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 k1 = k2 = 1.0
 
-interiorpenalty = 1.0
-interfacepenalty = 1.0
-negboundarypenalty = 1.0
-posboundarypenalty = 1.0
+alpha = 1
+interiorpenalty = alpha
+interfacepenalty = alpha
+negboundarypenalty = alpha
+posboundarypenalty = alpha
 theta = 45
 V0 = [cosd(theta), sind(theta)]
 

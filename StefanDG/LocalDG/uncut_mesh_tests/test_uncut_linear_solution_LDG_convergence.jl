@@ -167,18 +167,8 @@ G2rate1 = convergence_rate(dx, LDGerr1G2)
 
 
 ################################################################################
-powers = [1, 2, 3, 4, 5]
-nelmts = 2 .^ powers .+ 1
 solverorder = 2
 numqp = required_quadrature_order(solverorder)+2
-levelsetorder = 2
-k1 = k2 = 1.0
-interiorpenalty = 0.0
-interfacepenalty = 0.0
-negboundarypenalty = 0.0
-posboundarypenalty = 1.0
-theta = 45
-V0 = [cosd(theta), sind(theta)]
 
 distancefunction(x) = ones(size(x)[2])
 
@@ -218,11 +208,7 @@ G2rate2 = convergence_rate(dx, LDGerr2G2)
 using DataFrames, CSV
 df = DataFrame(NElmts = nelmts,
     errTLinear = LDGerr1T,
-    errG1Linear = LDGerr1G1,
-    errG2Linear = LDGerr1G2,
-    errTQuadratic = LDGerr2T,
-    errG1Quadratic = LDGerr2G1,
-    errG2Quadratic = LDGerr2G2,)
+    errTQuadratic = LDGerr2T)
 
 foldername = "LocalDG\\uncut_mesh_tests\\"
 filename = foldername *"linear_solution_LDG_convergence.csv"

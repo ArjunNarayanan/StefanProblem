@@ -5,7 +5,8 @@ include("../interior_penalty.jl")
 include("../../useful_routines.jl")
 
 function exact_solution(v)
-    return 1.0
+    x, y = v
+    return 3x + 4y
 end
 
 function source_term(v, k)
@@ -15,6 +16,7 @@ end
 function measure_error(
     nelmts,
     solverorder,
+    numqp,
     levelsetorder,
     distancefunction,
     sourceterm,
@@ -23,7 +25,6 @@ function measure_error(
     k2,
     penaltyfactor,
 )
-    numqp = required_quadrature_order(solverorder)
     solverbasis = LagrangeTensorProductBasis(2, solverorder)
     levelsetbasis = LagrangeTensorProductBasis(2, levelsetorder)
 
@@ -96,17 +97,20 @@ end
 powers = [1, 2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 solverorder = 1
-levelsetorder = 1
+numqp = required_quadrature_order(solverorder)+2
+levelsetorder = 2
 k1 = k2 = 1.0
 penaltyfactor = 1e3
 
-
-distancefunction(x) = ones(size(x)[2])
+interfacecenter = [1.,1.]
+interfaceradius = 0.5
+distancefunction(x) = circle_distance_function(x,interfacecenter,interfaceradius)
 
 err1 = [
     measure_error(
         ne,
         solverorder,
+        numqp,
         levelsetorder,
         distancefunction,
         x -> [source_term(x, k1)],
@@ -124,18 +128,14 @@ rate1 = convergence_rate(dx,err1)
 
 
 ################################################################################
-powers = [1, 2, 3, 4, 5]
-nelmts = 2 .^ powers .+ 1
 solverorder = 2
-levelsetorder = 1
-k1 = k2 = 1.0
-penaltyfactor = 1e3
-distancefunction(x) = ones(size(x)[2])
+numqp = required_quadrature_order(solverorder)+2
 
 err2 = [
     measure_error(
         ne,
         solverorder,
+        numqp,
         levelsetorder,
         distancefunction,
         x -> [source_term(x, k1)],
@@ -151,11 +151,12 @@ rate2 = convergence_rate(dx,err2)
 ################################################################################
 
 
+
 ################################################################################
 using DataFrames, CSV
 df = DataFrame(NElmts = nelmts,linear = err1, quadratic = err2)
 
-foldername = "InteriorPenalty\\uncut_mesh_tests\\"
-filename = foldername *"constant_solution_IP_convergence.csv"
+foldername = "InteriorPenalty\\curved_interface_tests\\"
+filename = foldername *"linear_solution_IP_convergence.csv"
 CSV.write(filename,df)
 ################################################################################

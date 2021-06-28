@@ -1,9 +1,9 @@
 using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
-include("interior_penalty.jl")
-include("../cylinder-analytical-solution.jl")
-include("../useful_routines.jl")
+include("../interior_penalty.jl")
+include("../../cylinder-analytical-solution.jl")
+include("../../useful_routines.jl")
 
 function assemble_two_phase_source!(
     systemrhs,
@@ -143,7 +143,7 @@ end
 
 
 ################################################################################
-powers = [2, 3, 4, 5]
+powers = [1, 2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 solverorder = 1
 numqp = required_quadrature_order(solverorder)
@@ -151,11 +151,11 @@ levelsetorder = 2
 k1 = 1.0
 k2 = 2.0
 q1 = 1.0
-q2 = 0.0
+q2 = 2.0
 penaltyfactor = 1e3
-center = [0.5, 0.5]
-innerradius = 0.3
-outerradius = 1.0
+center = [0., 0.]
+innerradius = 0.5
+outerradius = 1.5
 Tw = 1.0
 distancefunction(x) = circle_distance_function(x, center, innerradius)
 analyticalsolution = AnalyticalSolution.CylindricalSolver(
@@ -191,30 +191,8 @@ rate1 = convergence_rate(dx, err1)
 
 
 ################################################################################
-powers = [2, 3, 4, 5]
-nelmts = 2 .^ powers .+ 1
 solverorder = 2
 numqp = required_quadrature_order(solverorder)+2
-levelsetorder = 2
-k1 = 1.0
-k2 = 2.0
-q1 = 1.0
-q2 = 0.0
-penaltyfactor = 1e3
-center = [1.0, 1.0]
-innerradius = 0.25
-outerradius = 1.0
-Tw = 1.0
-distancefunction(x) = circle_distance_function(x, center, innerradius)
-analyticalsolution = AnalyticalSolution.CylindricalSolver(
-    q1,
-    k1,
-    q2,
-    k2,
-    innerradius,
-    outerradius,
-    Tw,
-)
 
 err2 = [
     measure_error(
@@ -235,4 +213,4 @@ err2 = [
 
 dx = 1.0 ./ nelmts
 rate2 = convergence_rate(dx, err2)
-################################################################################
+# ################################################################################

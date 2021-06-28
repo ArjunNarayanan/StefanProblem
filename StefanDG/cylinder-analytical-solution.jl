@@ -8,37 +8,37 @@ struct CylindricalSolver
     R::Any
     b::Any
     Tw::Any
+    B1::Any
+    A2::Any
+    B2::Any
     function CylindricalSolver(q1, k1, q2, k2, R, b, Tw)
-        new(q1, k1, q2, k2, R, b, Tw)
+        A2 = (q2 - q1) / (2k2) * R^2
+        B2 = Tw + q2 / (4k2) * b^2 - A2 * log(b)
+        B1 = R^2 * (q1 / k1 - q2 / k2) / 4 + B2 + A2 * log(R)
+
+        new(q1, k1, q2, k2, R, b, Tw, B1, A2, B2)
     end
 end
 
-function core_solution(r, q1, k1, q2, k2, R, b, Tw)
-    T =
-        Tw +
-        q1 / 4k1 * (R^2 - r^2) +
-        q2 / 4k2 * (b^2 - R^2) +
-        R^2 / 2k2 * (q2 - q1) * (log(R) - log(b))
+function core_solution(r, q1, k1, q2, k2, R, b, Tw, B1, A2, B2)
+    T = -q1 / (4k1) * r^2 + B1
     return T
 end
 
-function rim_solution(r, q1, k1, q2, k2, R, b, Tw)
-    T =
-        Tw + q2 / 4k2 * (b^2 - r^2) + q2 / 2k2 * R^2 * (log(r) - log(b)) -
-        q1 / 2k2 * R^2 * log(r)
+function rim_solution(r, q1, k1, q2, k2, R, b, Tw, B1, A2, B2)
+    T = -q2 / (4k2) * r^2 + A2 * log(r) + B2
 end
 
-function analytical_solution(r, q1, k1, q2, k2, R, b, Tw)
+function analytical_solution(r, q1, k1, q2, k2, R, b, Tw, B1, A2, B2)
     if r < R
-        return core_solution(r, q1, k1, q2, k2, R, b, Tw)
+        return core_solution(r, q1, k1, q2, k2, R, b, Tw, B1, A2, B2)
     else
-        return rim_solution(r, q1, k1, q2, k2, R, b, Tw)
+        return rim_solution(r, q1, k1, q2, k2, R, b, Tw, B1, A2, B2)
     end
 end
 
-function analytical_solution(r, solver::CylindricalSolver)
-    return analytical_solution(
-        r,
+function coefficients(solver::CylindricalSolver)
+    return [
         solver.q1,
         solver.k1,
         solver.q2,
@@ -46,7 +46,14 @@ function analytical_solution(r, solver::CylindricalSolver)
         solver.R,
         solver.b,
         solver.Tw,
-    )
+        solver.B1,
+        solver.A2,
+        solver.B2,
+    ]
+end
+
+function analytical_solution(r, solver::CylindricalSolver)
+    return analytical_solution(r, coefficients(solver)...)
 end
 
 function analytical_radial_derivative(r, q1, k1, q2, k2, R)
@@ -60,7 +67,14 @@ function analytical_radial_derivative(r, q1, k1, q2, k2, R)
 end
 
 function analytical_radial_derivative(r, solver::CylindricalSolver)
-    return analytical_radial_derivative(r, solver.q1, solver.k1,solver.q2, solver.k2, solver.R)
+    return analytical_radial_derivative(
+        r,
+        solver.q1,
+        solver.k1,
+        solver.q2,
+        solver.k2,
+        solver.R,
+    )
 end
 
 end

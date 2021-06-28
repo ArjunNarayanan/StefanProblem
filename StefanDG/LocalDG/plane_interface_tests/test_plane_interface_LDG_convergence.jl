@@ -5,15 +5,20 @@ include("../local_DG.jl")
 include("../../useful_routines.jl")
 
 function exact_solution(v)
-    return 1.0
+    x, y = v
+    return cos(2pi * x) * sin(2pi * y)
 end
 
 function source_term(v, k)
-    return 0.0
+    x, y = v
+    return 8pi^2 * k * cos(2pi * x) * sin(2pi * y)
 end
 
 function exact_gradient(v)
-    return [0.,0.]
+    x, y = v
+    Gx = -2pi * sin(2pi * x) * sin(2pi * y)
+    Gy = +2pi * cos(2pi * x) * cos(2pi * y)
+    return [Gx,Gy]
 end
 
 
@@ -118,18 +123,24 @@ end
 ################################################################################
 powers = [1, 2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
-solverorder = 1
-numqp = required_quadrature_order(solverorder)
-levelsetorder = 1
 k1 = k2 = 1.0
-interiorpenalty = 0.0
-interfacepenalty = 0.0
-negboundarypenalty = 0.0
-posboundarypenalty = 1.0
+
+interiorpenalty = 0.
+interfacepenalty = 0.
+negboundarypenalty = 0.
+posboundarypenalty = 1.
 theta = 45
 V0 = [cosd(theta), sind(theta)]
 
-distancefunction(x) = ones(size(x)[2])
+solverorder = 1
+numqp = required_quadrature_order(solverorder)
+levelsetorder = 1
+
+interfacepoint = [0.8,0.]
+interfaceangle = 60.0
+interfacenormal = [cosd(interfaceangle),sind(interfaceangle)]
+distancefunction(x) = plane_distance_function(x,interfacenormal,interfacepoint)
+
 
 LDGerr1 = [
     measure_error(
@@ -154,15 +165,15 @@ LDGerr1 = [
 LDGerr1T = [er[1] for er in LDGerr1]
 LDGerr1G1 = [er[2][1] for er in LDGerr1]
 LDGerr1G2 = [er[2][2] for er in LDGerr1]
+
+
 ################################################################################
 
 
 
 ################################################################################
 solverorder = 2
-numqp = required_quadrature_order(solverorder)+2
-
-distancefunction(x) = ones(size(x)[2])
+numqp = required_quadrature_order(solverorder) + 2
 
 LDGerr2 = [
     measure_error(
@@ -187,14 +198,21 @@ LDGerr2 = [
 LDGerr2T = [er[1] for er in LDGerr2]
 LDGerr2G1 = [er[2][1] for er in LDGerr2]
 LDGerr2G2 = [er[2][2] for er in LDGerr2]
+LDGerr2 = hcat(LDGerr2T,LDGerr2G1,LDGerr2G2)
 ################################################################################
 
 
 ################################################################################
 using DataFrames, CSV
-df = DataFrame(NElmts = nelmts,linear = LDGerr1T, quadratic = LDGerr2T)
+df = DataFrame(NElmts = nelmts,
+    errTLinear = LDGerr1T,
+    errG1Linear = LDGerr1G1,
+    errG2Linear = LDGerr1G2,
+    errTQuadratic = LDGerr2T,
+    errG1Quadratic = LDGerr2G1,
+    errG2Quadratic = LDGerr2G2,)
 
-foldername = "LocalDG\\uncut_mesh_tests\\"
-filename = foldername *"constant_solution_LDG_convergence.csv"
-CSV.write(filename,df)
+# foldername = "LocalDG\\plane_interface_tests\\"
+# filename = foldername *"LDG_convergence.csv"
+# CSV.write(filename,df)
 ################################################################################

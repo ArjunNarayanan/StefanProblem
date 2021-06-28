@@ -213,6 +213,6 @@ df = DataFrame(NElmts = nelmts,
     errG2Quadratic = LDGerr2G2,)
 
 # foldername = "LocalDG\\uncut_mesh_tests\\"
-# filename = foldername *"linear_solution_LDG_convergence.csv"
+# filename = foldername *"MD-LDG_convergence.csv"
 # CSV.write(filename,df)
 # ################################################################################

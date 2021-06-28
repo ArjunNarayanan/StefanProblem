@@ -1,25 +1,22 @@
 using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
-include("local_DG.jl")
-include("../useful_routines.jl")
+include("../local_DG.jl")
+include("../../useful_routines.jl")
 
 function exact_solution(v)
     x, y = v
-    return cos(2pi * x) * sin(2pi * y)
-end
-
-function exact_gradient(v)
-    x, y = v
-    gx = -2pi * sin(2pi * x) * sin(2pi * y)
-    gy = 2pi * cos(2pi * x) * cos(2pi * y)
-    return [gx, gy]
+    return 3x + 4y
 end
 
 function source_term(v, k)
-    x, y = v
-    return 8pi^2 * k * cos(2pi * x) * sin(2pi * y)
+    return 0.0
 end
+
+function exact_gradient(v)
+    return [3.,4.]
+end
+
 
 function measure_error(
     nelmts,
@@ -34,7 +31,8 @@ function measure_error(
     k2,
     interiorpenalty,
     interfacepenalty,
-    boundarypenalty,
+    negboundarypenalty,
+    posboundarypenalty,
     V0,
 )
     solverbasis = LagrangeTensorProductBasis(2, solverorder)
@@ -77,7 +75,8 @@ function measure_error(
         k2,
         interiorpenalty,
         interfacepenalty,
-        boundarypenalty,
+        negboundarypenalty,
+        posboundarypenalty,
         V0,
         mergedmesh,
     )
@@ -89,7 +88,9 @@ function measure_error(
         solverbasis,
         cellquads,
         facequads,
-        boundarypenalty,
+        negboundarypenalty,
+        posboundarypenalty,
+        V0,
         mergedmesh,
     )
     ################################################################################
@@ -107,34 +108,34 @@ function measure_error(
     ################################################################################
 
     Tnorm = integral_norm_on_mesh(exactsolution, cellquads, mergedmesh, 1)
-    Gnorm = integral_norm_on_mesh(exactgradient, cellquads, mergedmesh, 2)
+    # Gnorm = integral_norm_on_mesh(exactgradient, cellquads, mergedmesh, 2)
 
-    return errT[1] / Tnorm[1], errG ./ Gnorm
+    return errT[1] / Tnorm[1], errG # ./ Gnorm
 end
 
 
 
 
 ################################################################################
-powers = [2, 3, 4, 5]
+powers = [1, 2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
 solverorder = 1
 numqp = required_quadrature_order(solverorder)
 levelsetorder = 1
 k1 = k2 = 1.0
-boundarypenalty = 1.0
-interfacepenalty = 0.0
 interiorpenalty = 0.0
-V0 = [1.0, 1.0]
+interfacepenalty = 0.0
+negboundarypenalty = 0.0
+posboundarypenalty = 1.0
+theta = 45
+V0 = [cosd(theta), sind(theta)]
 
+interfacepoint = [0.8,0.]
+interfaceangle = 60.0
+interfacenormal = [cosd(interfaceangle),sind(interfaceangle)]
+distancefunction(x) = plane_distance_function(x,interfacenormal,interfacepoint)
 
-interfaceangle = 30.0
-interfacepoint = [0.8, 0.0]
-interfacenormal = [cosd(interfaceangle), sind(interfaceangle)]
-distancefunction(x) =
-    plane_distance_function(x, interfacenormal, interfacepoint)
-
-err1 = [
+LDGerr1 = [
     measure_error(
         ne,
         solverorder,
@@ -148,43 +149,31 @@ err1 = [
         k2,
         interiorpenalty,
         interfacepenalty,
-        boundarypenalty,
+        negboundarypenalty,
+        posboundarypenalty,
         V0,
     ) for ne in nelmts
 ]
 
-err1T = [er[1] for er in err1]
-err1G1 = [er[2][1] for er in err1]
-err1G2 = [er[2][2] for er in err1]
+LDGerr1T = [er[1] for er in LDGerr1]
+LDGerr1G1 = [er[2][1] for er in LDGerr1]
+LDGerr1G2 = [er[2][2] for er in LDGerr1]
+LDGerr1 = hcat(LDGerr1T,LDGerr1G1,LDGerr1G2)
 
 dx = 1.0 ./ nelmts
 
-Trate1 = convergence_rate(dx, err1T)
-G1rate1 = convergence_rate(dx, err1G1)
-G2rate1 = convergence_rate(dx, err1G2)
+Trate1 = convergence_rate(dx, LDGerr1T)
+G1rate1 = convergence_rate(dx, LDGerr1G1)
+G2rate1 = convergence_rate(dx, LDGerr1G2)
 ################################################################################
 
 
 
 ################################################################################
-powers = [2, 3, 4, 5]
-nelmts = 2 .^ powers .+ 1
 solverorder = 2
 numqp = required_quadrature_order(solverorder)+2
-levelsetorder = 2
-k1 = k2 = 1.0
-boundarypenalty = 1.0
-interfacepenalty = 1.0
-interiorpenalty = 0.0
-V0 = [1.0, 1.0]
 
-interfaceangle = 45.0
-interfacepoint = [0.8, 0.0]
-interfacenormal = [cosd(interfaceangle), sind(interfaceangle)]
-distancefunction(x) =
-    plane_distance_function(x, interfacenormal, interfacepoint)
-
-err2 = [
+LDGerr2 = [
     measure_error(
         ne,
         solverorder,
@@ -198,18 +187,31 @@ err2 = [
         k2,
         interiorpenalty,
         interfacepenalty,
-        boundarypenalty,
+        negboundarypenalty,
+        posboundarypenalty,
         V0,
     ) for ne in nelmts
 ]
 
-err2T = [er[1] for er in err2]
-err2G1 = [er[2][1] for er in err2]
-err2G2 = [er[2][2] for er in err2]
+LDGerr2T = [er[1] for er in LDGerr2]
+LDGerr2G1 = [er[2][1] for er in LDGerr2]
+LDGerr2G2 = [er[2][2] for er in LDGerr2]
+LDGerr2 = hcat(LDGerr2T,LDGerr2G1,LDGerr2G2)
 
 dx = 1.0 ./ nelmts
+Trate2 = convergence_rate(dx, LDGerr2T)
+G1rate2 = convergence_rate(dx, LDGerr2G1)
+G2rate2 = convergence_rate(dx, LDGerr2G2)
+################################################################################
 
-Trate2 = convergence_rate(dx, err2T)
-G1rate2 = convergence_rate(dx, err2G1)
-G2rate2 = convergence_rate(dx, err2G2)
+
+################################################################################
+using DataFrames, CSV
+df = DataFrame(NElmts = nelmts,
+    errTLinear = LDGerr1T,
+    errTQuadratic = LDGerr2T)
+
+foldername = "LocalDG\\plane_interface_tests\\"
+filename = foldername *"linear_solution_LDG_convergence.csv"
+CSV.write(filename,df)
 ################################################################################

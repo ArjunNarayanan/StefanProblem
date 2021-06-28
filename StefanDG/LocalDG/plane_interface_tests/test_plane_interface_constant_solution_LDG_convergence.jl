@@ -129,7 +129,10 @@ posboundarypenalty = 1.0
 theta = 45
 V0 = [cosd(theta), sind(theta)]
 
-distancefunction(x) = ones(size(x)[2])
+interfacepoint = [0.8,0.]
+interfaceangle = 60.0
+interfacenormal = [cosd(interfaceangle),sind(interfaceangle)]
+distancefunction(x) = plane_distance_function(x,interfacenormal,interfacepoint)
 
 LDGerr1 = [
     measure_error(
@@ -162,8 +165,6 @@ LDGerr1G2 = [er[2][2] for er in LDGerr1]
 solverorder = 2
 numqp = required_quadrature_order(solverorder)+2
 
-distancefunction(x) = ones(size(x)[2])
-
 LDGerr2 = [
     measure_error(
         ne,
@@ -194,7 +195,7 @@ LDGerr2G2 = [er[2][2] for er in LDGerr2]
 using DataFrames, CSV
 df = DataFrame(NElmts = nelmts,linear = LDGerr1T, quadratic = LDGerr2T)
 
-foldername = "LocalDG\\uncut_mesh_tests\\"
+foldername = "LocalDG\\plane_interface_tests\\"
 filename = foldername *"constant_solution_LDG_convergence.csv"
 CSV.write(filename,df)
 ################################################################################

@@ -2,9 +2,9 @@ using PyPlot
 using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
-include("local_DG.jl")
-include("../cylinder-analytical-solution.jl")
-include("../useful_routines.jl")
+include("../local_DG.jl")
+include("../../cylinder-analytical-solution.jl")
+include("../../useful_routines.jl")
 
 function assemble_two_phase_source!(
     systemrhs,
@@ -100,7 +100,7 @@ function plot_interface_flux_error(
 end
 
 
-nelmts = 17
+nelmts = 33
 solverorder = 2
 numqp = required_quadrature_order(solverorder) + 2
 levelsetorder = 2
@@ -109,12 +109,12 @@ k2 = 2.0
 q1 = 1.0
 q2 = 2.0
 
-interiorpenalty = 0
-interfacepenalty = 1e3
-boundarypenalty = 1
-
-V0angle = -45.0
-V0 = [cosd(V0angle), sind(V0angle)]
+interiorpenalty = 0.
+interfacepenalty = 0.
+negboundarypenalty = 0.
+posboundarypenalty = 1.
+V0theta = 45
+V0 = [cosd(V0theta), sind(V0theta)]
 
 center = [0.5, 0.5]
 innerradius = 0.3
@@ -180,7 +180,8 @@ LocalDG.assemble_LDG_linear_system!(
     k2,
     interiorpenalty,
     interfacepenalty,
-    boundarypenalty,
+    negboundarypenalty,
+    posboundarypenalty,
     V0,
     mergedmesh,
 )
@@ -191,7 +192,9 @@ LocalDG.assemble_LDG_rhs!(
     solverbasis,
     cellquads,
     facequads,
-    boundarypenalty,
+    negboundarypenalty,
+    posboundarypenalty,
+    V0,
     mergedmesh,
 )
 assemble_two_phase_source!(
@@ -302,13 +305,14 @@ numericalflux = 0.5 * (k1 * grads1 + k2 * grads2) - betaqn
 numericalnormalflux = vec(mapslices(sum, numericalflux .* normals, dims = 1))
 numericalnormalfluxerror =
     abs.(numericalnormalflux .- exactflux) ./ abs(exactflux)
-# ################################################################################
+################################################################################
 
-plot_interface_flux_error(
-    angularposition,
-    numericalnormalfluxerror,
-    ylim = (0.0, 0.05),
-)
+
+# plot_interface_flux_error(
+#     angularposition,
+#     numericalnormalfluxerror,
+#     ylim = (0.0, 0.05),
+# )
 
 # foldername = "LocalDG\\cylindrical-bc-flux\\"
 # filename =
@@ -318,13 +322,13 @@ plot_interface_flux_error(
 #     "-nelmts-" *
 #     string(nelmts) *
 #     ".png"
-# plot_interface_flux_error(
-#     angularposition,
-#     fluxerror1,
-#     fluxerror2,
-#     ylim = (0, 0.05),
-#     # filename = filename,
-# )
+plot_interface_flux_error(
+    angularposition,
+    fluxerror1,
+    fluxerror2,
+    ylim = (0, 0.05),
+    # filename = filename,
+)
 
 
 # maxerridx = argmax(fluxerror1)

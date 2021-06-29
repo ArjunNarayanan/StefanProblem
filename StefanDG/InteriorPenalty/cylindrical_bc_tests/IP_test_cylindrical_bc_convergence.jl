@@ -214,3 +214,16 @@ err2 = [
 dx = 1.0 ./ nelmts
 rate2 = convergence_rate(dx, err2)
 # ################################################################################
+
+
+
+
+
+################################################################################
+using DataFrames, CSV
+df = DataFrame(NElmts = nelmts,linear = err1, quadratic = err2)
+
+foldername = "InteriorPenalty\\cylindrical_bc_tests\\"
+filename = foldername *"IP_convergence.csv"
+CSV.write(filename,df)
+################################################################################

@@ -1,9 +1,9 @@
 using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
-include("local_DG.jl")
-include("../cylinder-analytical-solution.jl")
-include("../useful_routines.jl")
+include("../local_DG.jl")
+include("../../cylinder-analytical-solution.jl")
+include("../../useful_routines.jl")
 
 function assemble_two_phase_source!(
     systemrhs,
@@ -82,7 +82,8 @@ function measure_error(
     k2,
     interiorpenalty,
     interfacepenalty,
-    boundarypenalty,
+    negboundarypenalty,
+    posboundarypenalty,
     V0,
 )
     solverbasis = LagrangeTensorProductBasis(2, solverorder)
@@ -102,9 +103,6 @@ function measure_error(
     )
     levelset = CutCellDG.LevelSet(distancefunction, cgmesh, levelsetbasis)
     minelmtsize = minimum(CutCellDG.element_size(dgmesh))
-
-    # penalty = penaltyfactor
-    # penalty = penaltyfactor / minelmtsize * 0.5 * (k1 + k2)
 
     cutmesh = CutCellDG.CutMesh(dgmesh, levelset)
     cellquads = CutCellDG.CellQuadratures(cutmesh, levelset, numqp)
@@ -128,7 +126,8 @@ function measure_error(
         k2,
         interiorpenalty,
         interfacepenalty,
-        boundarypenalty,
+        negboundarypenalty,
+        posboundarypenalty,
         V0,
         mergedmesh,
     )
@@ -140,7 +139,9 @@ function measure_error(
         solverbasis,
         cellquads,
         facequads,
-        boundarypenalty,
+        negboundarypenalty,
+        posboundarypenalty,
+        V0,
         mergedmesh,
     )
     assemble_two_phase_source!(
@@ -168,7 +169,6 @@ function measure_error(
     Tnorm = integral_norm_on_mesh(exactsolution, cellquads, mergedmesh, 1)
     Gnorm = integral_norm_on_mesh(exactgradient, cellquads, mergedmesh, 2)
 
-    # return errT[1] / Tnorm[1]
     return errT[1] / Tnorm[1], errG ./ Gnorm
 end
 
@@ -176,25 +176,28 @@ end
 
 
 ################################################################################
-powers = [2, 3, 4, 5]
+powers = [1, 2, 3, 4, 5]
 nelmts = 2 .^ powers .+ 1
+
 solverorder = 1
 numqp = required_quadrature_order(solverorder) + 2
 levelsetorder = 2
 k1 = 1.0
 k2 = 2.0
 q1 = 1.0
-q2 = 0.0
+q2 = 2.0
 Tw = 1.0
 
-center = [0.5, 0.5]
-innerradius = 0.3
-outerradius = 1.0
+center = [0., 0.]
+innerradius = 0.5
+outerradius = 1.5
 
-interiorpenalty = 0.0
-interfacepenalty = 0.0
-boundarypenalty = 1.0
-V0 = [1.0, 1.0]
+interiorpenalty = 0.
+interfacepenalty = 0.
+negboundarypenalty = 0.
+posboundarypenalty = 1.
+theta = 45
+V0 = [cosd(theta), sind(theta)]
 
 distancefunction(x) = circle_distance_function(x, center, innerradius)
 analyticalsolution = AnalyticalSolution.CylindricalSolver(
@@ -223,7 +226,8 @@ err1 = [
         k2,
         interiorpenalty,
         interfacepenalty,
-        boundarypenalty,
+        negboundarypenalty,
+        posboundarypenalty,
         V0,
     ) for ne in nelmts
 ]
@@ -244,38 +248,8 @@ G2rate1 = convergence_rate(dx, err1G2)
 
 
 ################################################################################
-powers = [2, 3, 4, 5]
-nelmts = 2 .^ powers .+ 1
 solverorder = 2
 numqp = required_quadrature_order(solverorder) + 2
-levelsetorder = 2
-k1 = 1.0
-k2 = 2.0
-q1 = 1.0
-q2 = 0.0
-Tw = 1.0
-
-center = [0.5, 0.5]
-innerradius = 0.3
-outerradius = 1.0
-
-interiorpenalty = 0.0
-interfacepenalty = 0.0
-boundarypenalty = 1.0
-
-V0 = [1.0, 1.0]
-
-
-distancefunction(x) = circle_distance_function(x, center, innerradius)
-analyticalsolution = AnalyticalSolution.CylindricalSolver(
-    q1,
-    k1,
-    q2,
-    k2,
-    innerradius,
-    outerradius,
-    Tw,
-)
 
 err2 = [
     measure_error(
@@ -292,7 +266,8 @@ err2 = [
         k2,
         interiorpenalty,
         interfacepenalty,
-        boundarypenalty,
+        negboundarypenalty,
+        posboundarypenalty,
         V0,
     ) for ne in nelmts
 ]
@@ -308,4 +283,20 @@ dx = 1.0 ./ nelmts
 Trate2 = convergence_rate(dx, err2T)
 G1rate2 = convergence_rate(dx, err2G1)
 G2rate2 = convergence_rate(dx, err2G2)
+################################################################################
+
+
+################################################################################
+using DataFrames, CSV
+df = DataFrame(NElmts = nelmts,
+    errTLinear = err1T,
+    errG1Linear = err1G1,
+    errG2Linear = err1G2,
+    errTQuadratic = err2T,
+    errG1Quadratic = err2G1,
+    errG2Quadratic = err2G2,)
+
+foldername = "LocalDG\\cylindrical_bc_tests\\"
+filename = foldername *"LDG_convergence.csv"
+CSV.write(filename,df)
 ################################################################################

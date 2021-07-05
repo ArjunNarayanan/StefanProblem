@@ -109,10 +109,10 @@ k2 = 2.0
 q1 = 1.0
 q2 = 2.0
 
-interiorpenalty = 0.
-interfacepenalty = 0.
-negboundarypenalty = 0.
-posboundarypenalty = 1.
+interiorpenalty = 0.0
+interfacepenalty = 10
+negboundarypenalty = 0.0
+posboundarypenalty = 1.0
 V0theta = 45
 V0 = [cosd(V0theta), sind(V0theta)]
 
@@ -321,22 +321,40 @@ numericalnormalfluxerror =
 #     string(solverorder) *
 #     "-nelmts-" *
 #     string(nelmts) *
+#     "-interface-penalty-" *
+#     string(interfacepenalty) *
 #     ".png"
-plot_interface_flux_error(
-    angularposition,
-    fluxerror1,
-    fluxerror2,
-    ylim = (0, 0.05),
-    # filename = filename,
-)
+# plot_interface_flux_error(
+#     angularposition,
+#     fluxerror1,
+#     fluxerror2,
+#     ylim = (0, 0.05),
+#     filename = filename,
+# )
 
 
-# maxerridx = argmax(fluxerror1)
-# maxerrcellid = closestcellids[maxerridx]
-# cellsign = CutCellDG.cell_sign(mergedmesh,maxerrcellid)
-# CutCellDG.load_coefficients!(levelset,maxerrcellid)
-# interpolater = CutCellDG.interpolater(levelset)
-#
-# using Plots
-# xrange = -1:1e-1:1
-# Plots.contour(xrange,xrange,(x,y)->interpolater([x,y]),levels=[0.0])
+
+
+
+
+using Plots
+function plot_levelset(cellid,levelset)
+    CutCellDG.load_coefficients!(levelset,cellid)
+    interpolater = CutCellDG.interpolater(levelset)
+
+    xrange = -1:1e-1:1
+    Plots.contour(
+        xrange,
+        xrange,
+        (x, y) -> interpolater([x, y]),
+        levels = [0.0],
+        aspect_ratio = :equal,
+    )
+end
+
+
+maxerridx = sortperm(fluxerror1)
+maxerrcellid = closestcellids[maxerridx]
+unique!(maxerrcellid)
+
+plot_levelset(maxerrcellid[1],levelset)

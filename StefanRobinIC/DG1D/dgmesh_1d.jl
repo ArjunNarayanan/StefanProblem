@@ -10,9 +10,14 @@ struct DGMesh1D
     xR::Any
     interfacepoint::Any
     labels::Any
+    elementsize
 end
 
 function DGMesh1D(xL, xR, interfacepoint, nelmts1, nelmts2, refpoints)
+    dx1 = (interfacepoint - xL)/nelmts1
+    dx2 = (xR - interfacepoint)/nelmts2
+    elementsize = [dx1,dx2]
+
     c1 = construct_cell_maps(xL, interfacepoint, nelmts1)
     c2 = construct_cell_maps(interfacepoint, xR, nelmts2)
     cellmaps = vcat(c1, c2)
@@ -41,6 +46,7 @@ function DGMesh1D(xL, xR, interfacepoint, nelmts1, nelmts2, refpoints)
         xR,
         interfacepoint,
         labels,
+        elementsize
     )
 end
 
@@ -58,6 +64,10 @@ function Base.show(io::IO, dgmesh::DGMesh1D)
         "Nodes/Element : $nodesperelement\n\t"
     "Num. Nodes : $numnodes"
     print(io, str)
+end
+
+function element_size(mesh::DGMesh1D)
+    return mesh.elementsize
 end
 
 function cell_map(dgmesh::DGMesh1D,cellid)
@@ -90,6 +100,10 @@ end
 
 function nodal_connectivity(dgmesh::DGMesh1D,cellid)
     return dgmesh.nodalconnectivity[:,cellid]
+end
+
+function nodal_coordinates(dgmesh::DGMesh1D)
+    return dgmesh.nodalcoordinates
 end
 
 function element_label(dgmesh::DGMesh1D,cellid)

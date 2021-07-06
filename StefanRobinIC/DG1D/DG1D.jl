@@ -7,6 +7,7 @@ include("assemble_bilinear_form.jl")
 include("assemble_flux_operator.jl")
 include("assemble_penalty_operator.jl")
 include("assemble_boundary_conditions.jl")
+include("assemble_source_term.jl")
 include("assembly.jl")
 # end module
 end

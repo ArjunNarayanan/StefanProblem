@@ -18,7 +18,7 @@ function assemble_edge_flux_operator!(
     nodeids2,
 )
 
-    M11 = normal * flux_operator(basis, qp1, qp2, conductivity1, jacobian1)
+    M11 = normal * flux_operator(basis, qp1, qp1, conductivity1, jacobian1)
     M12 = normal * flux_operator(basis, qp1, qp2, conductivity1, jacobian2)
     M21 = -normal * flux_operator(basis, qp2, qp1, conductivity2, jacobian1)
     M22 = -normal * flux_operator(basis, qp2, qp2, conductivity2, jacobian2)

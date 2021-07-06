@@ -76,6 +76,10 @@ function number_of_elements(dgmesh::DGMesh1D)
     return dgmesh.numcells
 end
 
+function number_of_cells(dgmesh::DGMesh1D)
+    return dgmesh.numcells
+end
+
 function nodes_per_element(dgmesh::DGMesh1D)
     return dgmesh.nodesperelement
 end

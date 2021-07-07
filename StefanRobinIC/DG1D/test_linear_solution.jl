@@ -12,11 +12,11 @@ q1 = q2 = 0.0
 TL = 0.0
 TR = 1.0
 
-ne = 2
+ne = 1
 ne1 = ne
 ne2 = ne
 penalty = 1e2
-solverorder = 2
+solverorder = 1
 
 solverbasis = LagrangeTensorProductBasis(1, solverorder)
 numqp = required_quadrature_order(solverorder) + 1
@@ -40,7 +40,7 @@ rhs = DG1D.rhs_vector(sysrhs,mesh,1)
 
 solution = matrix\rhs
 
-err = uniform_mesh_L2_error(solution',x->x[1],solverbasis,quad,mesh)
-den = integral_norm_on_uniform_mesh(x->x[1],quad,mesh,1)
-
-err = err[1]/den[1]
+# err = uniform_mesh_L2_error(solution',x->x[1],solverbasis,quad,mesh)
+# den = integral_norm_on_uniform_mesh(x->x[1],quad,mesh,1)
+#
+# err = err[1]/den[1]

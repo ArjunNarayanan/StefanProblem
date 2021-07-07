@@ -1,7 +1,7 @@
-function flux_operator(basis, qp1, qp2, conductivity, jacobian)
+function flux_operator(basis, qp1, qp2, jacobian)
     V = basis(qp1)
     G = gradient(basis, qp2) ./ jacobian
-    return conductivity * V * G'
+    return V * G'
 end
 
 function assemble_edge_flux_operator!(
@@ -17,11 +17,13 @@ function assemble_edge_flux_operator!(
     nodeids1,
     nodeids2,
 )
+    n1 = normal
+    n2 = normal
 
-    M11 = normal * flux_operator(basis, qp1, qp1, conductivity1, jacobian1)
-    M12 = normal * flux_operator(basis, qp1, qp2, conductivity1, jacobian2)
-    M21 = -normal * flux_operator(basis, qp2, qp1, conductivity2, jacobian1)
-    M22 = -normal * flux_operator(basis, qp2, qp2, conductivity2, jacobian2)
+    M11 = n1 * conductivity1 * flux_operator(basis, qp1, qp1, jacobian1)
+    M12 = n2 * conductivity2 * flux_operator(basis, qp1, qp2, jacobian2)
+    M21 = -n1 * conductivity1 * flux_operator(basis, qp2, qp1, jacobian1)
+    M22 = -n2 * conductivity2 * flux_operator(basis, qp2, qp2, jacobian2)
 
     vM11 = 0.5vec(M11)
     vM12 = 0.5vec(M12)
@@ -132,10 +134,10 @@ function assemble_boundary_flux_operator!(
         qp = -1.0
         normal = -1.0
 
-        k = element_label(mesh,cellid) == 1 ? conductivity1 : conductivity2
-        jacobian = CutCellDG.jacobian(cell_map(mesh,cellid))
-        M = normal * vec(flux_operator(basis, qp, qp, k, jacobian))
-        nodeids = nodal_connectivity(mesh,cellid)
+        k = element_label(mesh, cellid) == 1 ? conductivity1 : conductivity2
+        jacobian = CutCellDG.jacobian(cell_map(mesh, cellid))
+        M = normal * k * vec(flux_operator(basis, qp, qp, jacobian))
+        nodeids = nodal_connectivity(mesh, cellid)
         CutCellDG.assemble_couple_cell_matrix!(
             sysmatrix,
             nodeids,
@@ -150,10 +152,10 @@ function assemble_boundary_flux_operator!(
         qp = 1.0
         normal = 1.0
 
-        k = element_label(mesh,cellid) == 1 ? conductivity1 : conductivity2
-        jacobian = CutCellDG.jacobian(cell_map(mesh,cellid))
-        M = normal * vec(flux_operator(basis, qp, qp, k, jacobian))
-        nodeids = nodal_connectivity(mesh,cellid)
+        k = element_label(mesh, cellid) == 1 ? conductivity1 : conductivity2
+        jacobian = CutCellDG.jacobian(cell_map(mesh, cellid))
+        M = normal * k * vec(flux_operator(basis, qp, qp, jacobian))
+        nodeids = nodal_connectivity(mesh, cellid)
         CutCellDG.assemble_couple_cell_matrix!(
             sysmatrix,
             nodeids,

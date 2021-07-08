@@ -1,3 +1,4 @@
+using Test
 using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
@@ -7,20 +8,19 @@ include("../analytical_solution_1d.jl")
 AS = AnalyticalSolver
 
 
-q1, q2 = 1.0, 1.0
-k1, k2 = 1.0, 1.0
-lambda = 10.0
-interfacepoint = 0.5
+q1, q2 = 0.0, 0.0
+k1, k2 = 1.0, 2.0
+lambda = 5.0
+interfacepoint = 0.7
 TL = 0.0
 TR = 1.0
-Tm = 0.5
+Tm = 0.8
 
 exactsolution =
     AS.Analytical1D(q1, k1, q2, k2, lambda, interfacepoint, TL, TR, Tm)
 
 ne = 1
-penaltyfactor = 100
-interfacepenalty = 1
+penaltyfactor = 1e2
 solverorder = 1
 solverbasis = LagrangeTensorProductBasis(1, solverorder)
 numqp = required_quadrature_order(solverorder) + 1
@@ -38,44 +38,68 @@ sysrhs = CutCellDG.SystemRHS()
 
 
 
-# DG1D.assemble_gradient_operator!(sysmatrix, solverbasis, quad, k1, k2, mesh)
+DG1D.assemble_gradient_operator!(sysmatrix, solverbasis, quad, k1, k2, mesh)
 DG1D.assemble_flux_operator!(sysmatrix, solverbasis, k1, k2, mesh)
-# DG1D.assemble_penalty_operator!(sysmatrix, solverbasis, penalty, mesh)
+DG1D.assemble_penalty_operator!(sysmatrix, solverbasis, penalty, mesh)
 DG1D.assemble_interface_robin_operator!(
     sysmatrix,
     solverbasis,
-    lambda * interfacepenalty,
+    lambda,
     mesh,
 )
 DG1D.assemble_interface_robin_source!(
     sysrhs,
     solverbasis,
-    lambda * interfacepenalty,
+    lambda,
     Tm,
     mesh,
 )
-# DG1D.assemble_two_phase_source!(
-#     sysrhs,
-#     x -> q1,
-#     x -> q2,
-#     solverbasis,
-#     quad,
-#     mesh,
-# )
-# DG1D.assemble_boundary_flux_operator!(sysmatrix, solverbasis, k1, k2, mesh)
-# DG1D.assemble_boundary_penalty_operator!(sysmatrix, solverbasis, penalty, mesh)
-# DG1D.assemble_boundary_rhs!(sysrhs, TL, TR, solverbasis, penalty, mesh)
+DG1D.assemble_two_phase_source!(
+    sysrhs,
+    x -> q1,
+    x -> q2,
+    solverbasis,
+    quad,
+    mesh,
+)
+DG1D.assemble_boundary_flux_operator!(sysmatrix, solverbasis, k1, k2, mesh)
+DG1D.assemble_boundary_penalty_operator!(sysmatrix, solverbasis, penalty, mesh)
+DG1D.assemble_boundary_rhs!(sysrhs, TL, TR, solverbasis, penalty, mesh)
 
 matrix = DG1D.sparse_operator(sysmatrix, mesh, 1)
 rhs = DG1D.rhs_vector(sysrhs, mesh, 1)
 
-# solution = matrix \ rhs
-# nodalcoordinates = vec(DG1D.nodal_coordinates(mesh))
-# truesolution = exactsolution.(nodalcoordinates)
-#
-#
-#
-#
+solution = matrix \ rhs
+nodalcoordinates = vec(DG1D.nodal_coordinates(mesh))
+truesolution = exactsolution.(nodalcoordinates)
+
+
+
+leftnodeids = DG1D.nodal_connectivity(mesh,ne)
+rightnodeids = DG1D.nodal_connectivity(mesh,ne+1)
+
+leftsol = solution[leftnodeids]
+rightsol = solution[rightnodeids]
+
+leftjac = CutCellDG.jacobian(DG1D.cell_map(mesh,ne))
+rightjac = CutCellDG.jacobian(DG1D.cell_map(mesh,ne+1))
+
+interpolater = InterpolatingPolynomial(1,solverbasis)
+
+update!(interpolater,leftsol)
+leftgrad = gradient(interpolater,[1.0])[1]/leftjac
+
+update!(interpolater,rightsol)
+rightgrad = gradient(interpolater,[-1.0])[1]/rightjac
+
+TI = 0.5*(leftsol[end]+rightsol[1])
+
+flux = k1*leftgrad - k2*rightgrad - lambda*(Tm - TI)
+@test isapprox(flux,0.0,atol=1e3eps())
+
+err = uniform_mesh_L2_error(solution',x->exactsolution(x[1]),solverbasis,quad,mesh)
+@test isapprox(err[1],0.0,atol=1e3eps())
+
 # using Plots
 # plot(nodalcoordinates, solution)
 # plot!(nodalcoordinates, truesolution)

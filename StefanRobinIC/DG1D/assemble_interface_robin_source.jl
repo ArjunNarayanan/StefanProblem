@@ -9,8 +9,8 @@ function assemble_robin_edge_source!(
     nodeids2,
 )
 
-    rhs1 = lambda * Tm * basis(qp1)
-    rhs2 = -lambda * Tm * basis(qp2)
+    rhs1 = 0.5 * lambda * Tm * basis(qp1)
+    rhs2 = 0.5 * lambda * Tm * basis(qp2)
 
     CutCellDG.assemble_cell_rhs!(sysrhs, nodeids1, 1, rhs1)
     CutCellDG.assemble_cell_rhs!(sysrhs, nodeids2, 1, rhs2)

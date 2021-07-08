@@ -8,10 +8,10 @@ function assemble_robin_edge_operator!(
     nodeids2,
 )
 
-    M11 = 0.5 * lambda * vec(mass_operator(basis, qp1, qp1))
-    M12 = 0.5 * lambda * vec(mass_operator(basis, qp1, qp2))
-    M21 = -0.5 * lambda * vec(mass_operator(basis, qp2, qp1))
-    M22 = -0.5 * lambda * vec(mass_operator(basis, qp2, qp2))
+    M11 = 0.25 * lambda * vec(mass_operator(basis, qp1, qp1))
+    M12 = 0.25 * lambda * vec(mass_operator(basis, qp1, qp2))
+    M21 = 0.25 * lambda * vec(mass_operator(basis, qp2, qp1))
+    M22 = 0.25 * lambda * vec(mass_operator(basis, qp2, qp2))
 
     CutCellDG.assemble_couple_cell_matrix!(
         sysmatrix,

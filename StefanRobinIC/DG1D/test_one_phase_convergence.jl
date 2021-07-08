@@ -102,7 +102,7 @@ err1 = [measure_error(
 dx = 0.5 ./ nelmts
 
 rate1 = convergence_rate(dx,err1)
-# @test all(rate .> 1.95)
+# @test all(rate1 .> 1.95)
 ################################################################################
 
 
@@ -127,5 +127,5 @@ err2 = [measure_error(
     x -> exactsolution(x[1]),
 ) for ne in nelmts]
 
-# @test all(err .< 1e6eps())
+# @test all(err2 .< 1e6eps())
 ################################################################################

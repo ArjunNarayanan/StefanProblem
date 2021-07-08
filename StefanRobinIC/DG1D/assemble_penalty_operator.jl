@@ -14,10 +14,10 @@ function assemble_edge_penalty_operator!(
     nodeids2,
 )
 
-    M11 = -1.0vec(penalty * mass_operator(basis, qp1, qp1))
-    M12 = vec(penalty * mass_operator(basis, qp1, qp2))
-    M21 = vec(penalty * mass_operator(basis, qp2, qp1))
-    M22 = -1.0vec(penalty * mass_operator(basis, qp2, qp2))
+    M11 = vec(penalty * mass_operator(basis, qp1, qp1))
+    M12 = -vec(penalty * mass_operator(basis, qp1, qp2))
+    M21 = -vec(penalty * mass_operator(basis, qp2, qp1))
+    M22 = vec(penalty * mass_operator(basis, qp2, qp2))
 
     CutCellDG.assemble_couple_cell_matrix!(
         sysmatrix,
@@ -74,7 +74,7 @@ function assemble_boundary_penalty_operator!(sysmatrix, basis, penalty, mesh)
         cellid = 1
         qp = -1.0
 
-        M = -1.0vec(penalty * mass_operator(basis, qp, qp))
+        M = vec(penalty * mass_operator(basis, qp, qp))
         nodeids = nodal_connectivity(mesh,cellid)
         CutCellDG.assemble_couple_cell_matrix!(
             sysmatrix,
@@ -89,7 +89,7 @@ function assemble_boundary_penalty_operator!(sysmatrix, basis, penalty, mesh)
         cellid = number_of_elements(mesh)
         qp = 1.0
 
-        M = -1.0vec(penalty * mass_operator(basis, qp, qp))
+        M = vec(penalty * mass_operator(basis, qp, qp))
         nodeids = nodal_connectivity(mesh,cellid)
         CutCellDG.assemble_couple_cell_matrix!(
             sysmatrix,

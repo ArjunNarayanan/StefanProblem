@@ -19,7 +19,7 @@ function assemble_cell_source!(
     cellmap,
 )
     jacobian = CutCellDG.jacobian(cellmap)
-    rhs = -1.0*linear_form(rhsfunc, basis, quad, cellmap, jacobian)
+    rhs = linear_form(rhsfunc, basis, quad, cellmap, jacobian)
     CutCellDG.assemble_cell_rhs!(systemrhs, nodeids, 1, rhs)
 end
 

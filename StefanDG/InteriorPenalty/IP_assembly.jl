@@ -86,6 +86,8 @@ function assemble_interior_penalty_rhs!(
     solverbasis,
     cellquads,
     facequads,
+    k1,
+    k2,
     penalty,
     mesh,
 )
@@ -94,6 +96,8 @@ function assemble_interior_penalty_rhs!(
         boundaryfunc,
         solverbasis,
         facequads,
+        k1,
+        k2,
         penalty,
         mesh,
     )

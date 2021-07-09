@@ -46,111 +46,75 @@ function assemble_face_flux_operator!(
     nodeids2,
 )
 
-    M11 = -1.0flux_operator(
-        basis,
-        quad1,
-        quad1,
-        normals,
-        conductivity1,
-        jacobian,
-        scaleareas,
-    )
-    M12 = -1.0flux_operator(
-        basis,
-        quad1,
-        quad2,
-        normals,
-        conductivity1,
-        jacobian,
-        scaleareas,
-    )
-    M21 = -1.0flux_operator(
-        basis,
-        quad2,
-        quad1,
-        normals,
-        conductivity2,
-        jacobian,
-        scaleareas,
-    )
-    M22 = -1.0flux_operator(
-        basis,
-        quad2,
-        quad2,
-        normals,
-        conductivity2,
-        jacobian,
-        scaleareas,
-    )
-
-
-    vM11 = 0.5vec(M11)
-    vM12 = 0.5vec(M12)
-    vM21 = 0.5vec(M21)
-    vM22 = 0.5vec(M22)
-
-    vM11T = 0.5vec(transpose(M11))
-    vM12T = 0.5vec(transpose(M12))
-    vM21T = 0.5vec(transpose(M21))
-    vM22T = 0.5vec(transpose(M22))
+    M11 =
+        -0.5flux_operator(
+            basis,
+            quad1,
+            quad1,
+            normals,
+            conductivity1,
+            jacobian,
+            scaleareas,
+        )
+    M12 =
+        -0.5flux_operator(
+            basis,
+            quad1,
+            quad2,
+            normals,
+            conductivity1,
+            jacobian,
+            scaleareas,
+        )
+    M21 =
+        -0.5flux_operator(
+            basis,
+            quad2,
+            quad1,
+            normals,
+            conductivity2,
+            jacobian,
+            scaleareas,
+        )
+    M22 =
+        -0.5flux_operator(
+            basis,
+            quad2,
+            quad2,
+            normals,
+            conductivity2,
+            jacobian,
+            scaleareas,
+        )
 
     CutCellDG.assemble_couple_cell_matrix!(
         sysmatrix,
         nodeids1,
         nodeids1,
         1,
-        vM11,
+        vec(M11 + M11'),
     )
     CutCellDG.assemble_couple_cell_matrix!(
         sysmatrix,
         nodeids2,
         nodeids1,
         1,
-        vM21,
+        vec(M21 - M12'),
     )
     CutCellDG.assemble_couple_cell_matrix!(
         sysmatrix,
         nodeids1,
         nodeids2,
         1,
-        -vM12,
+        vec(-M12 + M21'),
     )
     CutCellDG.assemble_couple_cell_matrix!(
         sysmatrix,
         nodeids2,
         nodeids2,
         1,
-        -vM22,
+        vec(-M22 - M22'),
     )
-    CutCellDG.assemble_couple_cell_matrix!(
-        sysmatrix,
-        nodeids1,
-        nodeids1,
-        1,
-        vM11T,
-    )
-    CutCellDG.assemble_couple_cell_matrix!(
-        sysmatrix,
-        nodeids1,
-        nodeids2,
-        1,
-        vM21T,
-    )
-    CutCellDG.assemble_couple_cell_matrix!(
-        sysmatrix,
-        nodeids2,
-        nodeids1,
-        1,
-        -vM12T,
-    )
-    CutCellDG.assemble_couple_cell_matrix!(
-        sysmatrix,
-        nodeids2,
-        nodeids2,
-        1,
-        -vM22T,
-    )
-
 end
 
 
@@ -378,21 +342,18 @@ function assemble_boundary_face_flux_operator!(
     normals = repeat(normal, inner = (1, numqp))
     scaleareas = repeat([facedetjac], numqp)
 
-    M = -1.0vec(
-        transpose(
-            flux_operator(
-                basis,
-                quad,
-                quad,
-                normals,
-                conductivity,
-                jacobian,
-                scaleareas,
-            ),
-        ),
+    M = flux_operator(
+        basis,
+        quad,
+        quad,
+        normals,
+        conductivity,
+        jacobian,
+        scaleareas,
     )
+    vM = -vec(M + M')
 
-    CutCellDG.assemble_couple_cell_matrix!(sysmatrix, nodeids, nodeids, 1, M)
+    CutCellDG.assemble_couple_cell_matrix!(sysmatrix, nodeids, nodeids, 1, vM)
 end
 
 function assemble_boundary_cell_flux_operator!(

@@ -1,3 +1,4 @@
+using LinearAlgebra, Test
 using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
@@ -44,7 +45,6 @@ function measure_error(
     levelset = CutCellDG.LevelSet(distancefunction, cgmesh, levelsetbasis)
     minelmtsize = minimum(CutCellDG.element_size(dgmesh))
 
-    # penalty = penaltyfactor
     penalty = penaltyfactor / minelmtsize
 
     cutmesh = CutCellDG.CutMesh(dgmesh, levelset)
@@ -74,15 +74,18 @@ function measure_error(
     InteriorPenalty.assemble_interior_penalty_rhs!(
         sysrhs,
         sourceterm,
-        x->[exactsolution(x)],
+        x -> exactsolution(x),
         solverbasis,
         cellquads,
         facequads,
+        k1,
+        k2,
         penalty,
         mergedmesh,
     )
     ################################################################################
     matrix = CutCellDG.sparse_operator(sysmatrix, mergedmesh, 1)
+    @assert issymmetric(matrix)
     rhs = CutCellDG.rhs_vector(sysrhs, mergedmesh, 1)
     sol = matrix \ rhs
     ################################################################################
@@ -109,7 +112,7 @@ err1 = [
         solverorder,
         levelsetorder,
         distancefunction,
-        x -> [source_term(x, k1)],
+        x -> source_term(x, k1),
         exact_solution,
         k1,
         k2,
@@ -118,7 +121,8 @@ err1 = [
 ]
 
 dx = 1.0 ./ nelmts
-rate1 = convergence_rate(dx,err1)
+rate1 = convergence_rate(dx, err1)
+@test all(rate1 .> 1.8)
 ################################################################################
 
 
@@ -131,7 +135,7 @@ levelsetorder = 1
 k1 = k2 = 1.0
 penaltyfactor = 1e3
 # distancefunction(x) = plane_distance_function(x, [1.0, 0.0], [0.5, 0.0])
-distancefunction(x) = circle_distance_function(x,[0.5,0.5],0.25)
+distancefunction(x) = circle_distance_function(x, [0.5, 0.5], 0.25)
 
 err2 = [
     measure_error(
@@ -139,7 +143,7 @@ err2 = [
         solverorder,
         levelsetorder,
         distancefunction,
-        x -> [source_term(x, k1)],
+        x -> source_term(x, k1),
         exact_solution,
         k1,
         k2,
@@ -148,5 +152,6 @@ err2 = [
 ]
 
 dx = 1.0 ./ nelmts
-rate2 = convergence_rate(dx,err2)
+rate2 = convergence_rate(dx, err2)
+@test all(rate2 .> 2.8)
 ################################################################################

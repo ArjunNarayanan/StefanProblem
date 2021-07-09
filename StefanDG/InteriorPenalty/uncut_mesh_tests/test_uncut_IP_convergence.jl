@@ -1,3 +1,4 @@
+using LinearAlgebra
 using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
@@ -44,7 +45,6 @@ function measure_error(
     levelset = CutCellDG.LevelSet(distancefunction, cgmesh, levelsetbasis)
     minelmtsize = minimum(CutCellDG.element_size(dgmesh))
 
-    # penalty = penaltyfactor
     penalty = penaltyfactor / minelmtsize
 
     cutmesh = CutCellDG.CutMesh(dgmesh, levelset)
@@ -74,15 +74,18 @@ function measure_error(
     InteriorPenalty.assemble_interior_penalty_rhs!(
         sysrhs,
         sourceterm,
-        x->[exactsolution(x)],
+        x -> exactsolution(x),
         solverbasis,
         cellquads,
         facequads,
+        k1,
+        k2,
         penalty,
         mergedmesh,
     )
     ################################################################################
     matrix = CutCellDG.sparse_operator(sysmatrix, mergedmesh, 1)
+    @assert issymmetric(matrix)
     rhs = CutCellDG.rhs_vector(sysrhs, mergedmesh, 1)
     sol = matrix \ rhs
     ################################################################################
@@ -109,7 +112,7 @@ err1 = [
         solverorder,
         levelsetorder,
         distancefunction,
-        x -> [source_term(x, k1)],
+        x -> source_term(x, k1),
         exact_solution,
         k1,
         k2,
@@ -118,7 +121,8 @@ err1 = [
 ]
 
 dx = 1.0 ./ nelmts
-rate1 = convergence_rate(dx,err1)
+rate1 = convergence_rate(dx, err1)
+pushfirst!(rate1, 0.0)
 ################################################################################
 
 
@@ -138,7 +142,7 @@ err2 = [
         solverorder,
         levelsetorder,
         distancefunction,
-        x -> [source_term(x, k1)],
+        x -> source_term(x, k1),
         exact_solution,
         k1,
         k2,
@@ -147,16 +151,23 @@ err2 = [
 ]
 
 dx = 1.0 ./ nelmts
-rate2 = convergence_rate(dx,err2)
+rate2 = convergence_rate(dx, err2)
+pushfirst!(rate2, 0.0)
 ################################################################################
 
 
 
 ################################################################################
 using DataFrames, CSV
-df = DataFrame(NElmts = nelmts,linear = err1, quadratic = err2)
+df = DataFrame(
+    NElmts = nelmts,
+    linear = err1,
+    rate1 = rate1,
+    quadratic = err2,
+    rate2 = rate2,
+)
 
 foldername = "InteriorPenalty\\uncut_mesh_tests\\"
-filename = foldername *"IP_convergence.csv"
-CSV.write(filename,df)
+filename = foldername * "IP_convergence.csv"
+# CSV.write(filename,df)
 ################################################################################

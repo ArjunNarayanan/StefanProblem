@@ -1,3 +1,4 @@
+using LinearAlgebra
 using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
@@ -73,15 +74,18 @@ function measure_error(
     InteriorPenalty.assemble_interior_penalty_rhs!(
         sysrhs,
         sourceterm,
-        x->[exactsolution(x)],
+        x->exactsolution(x),
         solverbasis,
         cellquads,
         facequads,
+        k1,
+        k2,
         penalty,
         mergedmesh,
     )
     ################################################################################
     matrix = CutCellDG.sparse_operator(sysmatrix, mergedmesh, 1)
+    @assert issymmetric(matrix)
     rhs = CutCellDG.rhs_vector(sysrhs, mergedmesh, 1)
     sol = matrix \ rhs
     ################################################################################
@@ -108,7 +112,7 @@ err1 = [
         solverorder,
         levelsetorder,
         distancefunction,
-        x -> [source_term(x, k1)],
+        x -> source_term(x, k1),
         exact_solution,
         k1,
         k2,
@@ -137,7 +141,7 @@ err2 = [
         solverorder,
         levelsetorder,
         distancefunction,
-        x -> [source_term(x, k1)],
+        x -> source_term(x, k1),
         exact_solution,
         k1,
         k2,
@@ -157,5 +161,5 @@ df = DataFrame(NElmts = nelmts,linear = err1, quadratic = err2)
 
 foldername = "InteriorPenalty\\uncut_mesh_tests\\"
 filename = foldername *"linear_solution_IP_convergence.csv"
-CSV.write(filename,df)
+# CSV.write(filename,df)
 ################################################################################

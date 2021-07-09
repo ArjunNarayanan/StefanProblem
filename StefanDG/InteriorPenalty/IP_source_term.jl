@@ -51,6 +51,49 @@ end
 
 
 ################################################################################
+function assemble_two_phase_source!(
+    systemrhs,
+    rhsfunc1,
+    rhsfunc2,
+    basis,
+    cellquads,
+    mesh,
+)
+
+    ncells = CutCellDG.number_of_cells(mesh)
+    for cellid = 1:ncells
+        cellsign = CutCellDG.cell_sign(mesh, cellid)
+        CutCellDG.check_cellsign(cellsign)
+
+        if cellsign == +1 || cellsign == 0
+            InteriorPenalty.assemble_cell_source!(
+                systemrhs,
+                rhsfunc1,
+                basis,
+                cellquads,
+                mesh,
+                +1,
+                cellid,
+            )
+        end
+        if cellsign == -1 || cellsign == 0
+            InteriorPenalty.assemble_cell_source!(
+                systemrhs,
+                rhsfunc2,
+                basis,
+                cellquads,
+                mesh,
+                -1,
+                cellid,
+            )
+        end
+    end
+end
+################################################################################
+
+
+
+################################################################################
 function linear_form(rhsfunc, basis, quad, cellmap, detjac)
     nf = number_of_basis_functions(basis)
     rhs = zeros(nf)

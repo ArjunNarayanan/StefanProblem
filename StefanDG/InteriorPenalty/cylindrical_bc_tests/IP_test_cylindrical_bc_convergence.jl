@@ -1,3 +1,4 @@
+using LinearAlgebra
 using PolynomialBasis
 using ImplicitDomainQuadrature
 using CutCellDG
@@ -5,44 +6,6 @@ include("../interior_penalty.jl")
 include("../../cylinder-analytical-solution.jl")
 include("../../useful_routines.jl")
 
-function assemble_two_phase_source!(
-    systemrhs,
-    rhsfunc1,
-    rhsfunc2,
-    basis,
-    cellquads,
-    mesh,
-)
-
-    ncells = CutCellDG.number_of_cells(mesh)
-    for cellid = 1:ncells
-        cellsign = CutCellDG.cell_sign(mesh, cellid)
-        CutCellDG.check_cellsign(cellsign)
-
-        if cellsign == +1 || cellsign == 0
-            InteriorPenalty.assemble_cell_source!(
-                systemrhs,
-                rhsfunc1,
-                basis,
-                cellquads,
-                mesh,
-                +1,
-                cellid,
-            )
-        end
-        if cellsign == -1 || cellsign == 0
-            InteriorPenalty.assemble_cell_source!(
-                systemrhs,
-                rhsfunc2,
-                basis,
-                cellquads,
-                mesh,
-                -1,
-                cellid,
-            )
-        end
-    end
-end
 
 function measure_error(
     nelmts,
@@ -57,8 +20,6 @@ function measure_error(
     k2,
     penaltyfactor,
 )
-
-    # println("Number of elements = $nelmts")
 
     solverbasis = LagrangeTensorProductBasis(2, solverorder)
     levelsetbasis = LagrangeTensorProductBasis(2, levelsetorder)
@@ -104,15 +65,17 @@ function measure_error(
     )
     InteriorPenalty.assemble_interior_penalty_rhs!(
         sysrhs,
-        x -> [0.0],
-        x -> [exactsolution(x)],
+        x -> 0.0,
+        exactsolution,
         solverbasis,
         cellquads,
         facequads,
+        k1,
+        k2,
         penalty,
         mergedmesh,
     )
-    assemble_two_phase_source!(
+    InteriorPenalty.assemble_two_phase_source!(
         sysrhs,
         rhsfunc1,
         rhsfunc2,
@@ -122,6 +85,7 @@ function measure_error(
     )
     ################################################################################
     matrix = CutCellDG.sparse_operator(sysmatrix, mergedmesh, 1)
+    @assert issymmetric(matrix)
     rhs = CutCellDG.rhs_vector(sysrhs, mergedmesh, 1)
     sol = matrix \ rhs
     ################################################################################
@@ -153,7 +117,7 @@ k2 = 2.0
 q1 = 1.0
 q2 = 2.0
 penaltyfactor = 1e3
-center = [0., 0.]
+center = [0.0, 0.0]
 innerradius = 0.5
 outerradius = 1.5
 Tw = 1.0
@@ -175,8 +139,8 @@ err1 = [
         numqp,
         levelsetorder,
         distancefunction,
-        x -> [q1],
-        x -> [q2],
+        x -> q1,
+        x -> q2,
         x -> analyticalsolution(x, center),
         k1,
         k2,
@@ -187,12 +151,13 @@ err1 = [
 
 dx = 1.0 ./ nelmts
 rate1 = convergence_rate(dx, err1)
+pushfirst!(rate1,0.0)
 ################################################################################
 
 
 ################################################################################
 solverorder = 2
-numqp = required_quadrature_order(solverorder)+2
+numqp = required_quadrature_order(solverorder) + 2
 
 err2 = [
     measure_error(
@@ -201,8 +166,8 @@ err2 = [
         numqp,
         levelsetorder,
         distancefunction,
-        x -> [q1],
-        x -> [q2],
+        x -> q1,
+        x -> q2,
         x -> analyticalsolution(x, center),
         k1,
         k2,
@@ -213,6 +178,7 @@ err2 = [
 
 dx = 1.0 ./ nelmts
 rate2 = convergence_rate(dx, err2)
+pushfirst!(rate2,0.0)
 # ################################################################################
 
 
@@ -221,9 +187,15 @@ rate2 = convergence_rate(dx, err2)
 
 ################################################################################
 using DataFrames, CSV
-df = DataFrame(NElmts = nelmts,linear = err1, quadratic = err2)
+df = DataFrame(
+    NElmts = nelmts,
+    linear = err1,
+    rate1 = rate1,
+    quadratic = err2,
+    rate2 = rate2,
+)
 
 foldername = "InteriorPenalty\\cylindrical_bc_tests\\"
-filename = foldername *"IP_convergence.csv"
+filename = foldername * "IP_convergence.csv"
 # CSV.write(filename,df)
 ################################################################################

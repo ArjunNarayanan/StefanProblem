@@ -64,7 +64,7 @@ DG1D.assemble_two_phase_source!(
 )
 DG1D.assemble_boundary_flux_operator!(sysmatrix, solverbasis, k1, k2, mesh)
 DG1D.assemble_boundary_penalty_operator!(sysmatrix, solverbasis, penalty, mesh)
-DG1D.assemble_boundary_rhs!(sysrhs, TL, TR, solverbasis, penalty, mesh)
+DG1D.assemble_boundary_rhs!(sysrhs, k1, k2, TL, TR, solverbasis, penalty, mesh)
 
 matrix = DG1D.sparse_operator(sysmatrix, mesh, 1)
 rhs = DG1D.rhs_vector(sysrhs, mesh, 1)

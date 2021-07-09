@@ -20,13 +20,13 @@ function assemble_edge_flux_operator!(
 
     M11 = normal * conductivity1 * flux_operator(basis, qp1, qp1, jacobian1)
     M12 = normal * conductivity2 * flux_operator(basis, qp1, qp2, jacobian2)
-    M21 = -normal * conductivity1 * flux_operator(basis, qp2, qp1, jacobian1)
-    M22 = -normal * conductivity2 * flux_operator(basis, qp2, qp2, jacobian2)
+    M21 = normal * conductivity1 * flux_operator(basis, qp2, qp1, jacobian1)
+    M22 = normal * conductivity2 * flux_operator(basis, qp2, qp2, jacobian2)
 
-    vM11 = -0.5vec(M11)
-    vM12 = -0.5vec(M12)
-    vM21 = -0.5vec(M21)
-    vM22 = -0.5vec(M22)
+    vM11 = -0.5vec(M11+M11')
+    vM12 = -0.5vec(M12-M21')
+    vM21 = -0.5vec(-M21+M12')
+    vM22 = -0.5vec(-M22-M22')
 
     CutCellDG.assemble_couple_cell_matrix!(
         sysmatrix,
@@ -134,7 +134,11 @@ function assemble_boundary_flux_operator!(
 
         k = element_label(mesh, cellid) == 1 ? conductivity1 : conductivity2
         jacobian = CutCellDG.jacobian(cell_map(mesh, cellid))
-        M = -normal * k * vec(flux_operator(basis, qp, qp, jacobian))
+
+        M11 = normal*k*flux_operator(basis,qp,qp,jacobian)
+        M = -1.0*vec(M11+M11')
+        # M = -1.0*vec(M11)
+
         nodeids = nodal_connectivity(mesh, cellid)
         CutCellDG.assemble_couple_cell_matrix!(
             sysmatrix,
@@ -152,7 +156,11 @@ function assemble_boundary_flux_operator!(
 
         k = element_label(mesh, cellid) == 1 ? conductivity1 : conductivity2
         jacobian = CutCellDG.jacobian(cell_map(mesh, cellid))
-        M = -normal * k * vec(flux_operator(basis, qp, qp, jacobian))
+
+        M11 = normal*k*flux_operator(basis,qp,qp,jacobian)
+        M = -1.0*vec(M11+M11')
+        # M = -1.0*vec(M11)
+
         nodeids = nodal_connectivity(mesh, cellid)
         CutCellDG.assemble_couple_cell_matrix!(
             sysmatrix,

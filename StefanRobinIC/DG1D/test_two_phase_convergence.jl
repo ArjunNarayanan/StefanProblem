@@ -1,3 +1,4 @@
+using LinearAlgebra
 using Test
 using PolynomialBasis
 using ImplicitDomainQuadrature
@@ -23,9 +24,9 @@ function measure_error(
     exactsolution,
 )
     refpoints = interpolation_points(solverbasis)
-    mesh = DG1D.DGMesh1D(0.0,1.0,interfacepoint,ne,ne,refpoints)
+    mesh = DG1D.DGMesh1D(0.0, 1.0, interfacepoint, ne, ne, refpoints)
     minelmtsize = minimum(DG1D.element_size(mesh))
-    penalty = penaltyfactor/minelmtsize
+    penalty = penaltyfactor / minelmtsize
 
     sysmatrix = CutCellDG.SystemMatrix()
     sysrhs = CutCellDG.SystemRHS()
@@ -48,18 +49,28 @@ function measure_error(
         penalty,
         mesh,
     )
-    DG1D.assemble_boundary_rhs!(sysrhs, TL, TR, solverbasis, penalty, mesh)
+    DG1D.assemble_boundary_rhs!(
+        sysrhs,
+        k1,
+        k2,
+        TL,
+        TR,
+        solverbasis,
+        penalty,
+        mesh,
+    )
 
-    matrix = DG1D.sparse_operator(sysmatrix,mesh,1)
-    rhs = DG1D.rhs_vector(sysrhs,mesh,1)
+    matrix = DG1D.sparse_operator(sysmatrix, mesh, 1)
+    rhs = DG1D.rhs_vector(sysrhs, mesh, 1)
 
-    solution = matrix\rhs
+    solution = matrix \ rhs
 
     err =
         uniform_mesh_L2_error(solution', exactsolution, solverbasis, quad, mesh)
     den = integral_norm_on_uniform_mesh(exactsolution, quad, mesh, 1)
 
-    return err[1] / den[1]
+    symmflag = issymmetric(matrix)
+    return err[1] / den[1], symmflag
 end
 
 
@@ -81,28 +92,33 @@ solverbasis = LagrangeTensorProductBasis(1, solverorder)
 numqp = required_quadrature_order(solverorder)
 quad = tensor_product_quadrature(1, numqp)
 
-powers = [1,2,3,4,5]
+powers = [1, 2, 3, 4, 5]
 nelmts = 2 .^ powers
 
-err1 = [measure_error(
-    ne,
-    solverbasis,
-    quad,
-    q1,
-    k1,
-    q2,
-    k2,
-    interfacepoint,
-    TL,
-    TR,
-    penalty,
-    x -> exactsolution(x[1]),
-) for ne in nelmts]
+rvals = [
+    measure_error(
+        ne,
+        solverbasis,
+        quad,
+        q1,
+        k1,
+        q2,
+        k2,
+        interfacepoint,
+        TL,
+        TR,
+        penalty,
+        x -> exactsolution(x[1]),
+    ) for ne in nelmts
+]
 
+err1 = [r[1] for r in rvals]
+flags1 = [r[2] for r in rvals]
 dx = 0.5 ./ nelmts
 
-rate1 = convergence_rate(dx,err1)
+rate1 = convergence_rate(dx, err1)
 @test all(rate1 .> 1.95)
+@test all(flags1)
 ################################################################################
 
 ################################################################################
@@ -111,20 +127,26 @@ solverbasis = LagrangeTensorProductBasis(1, solverorder)
 numqp = required_quadrature_order(solverorder)
 quad = tensor_product_quadrature(1, numqp)
 
-err2 = [measure_error(
-    ne,
-    solverbasis,
-    quad,
-    q1,
-    k1,
-    q2,
-    k2,
-    interfacepoint,
-    TL,
-    TR,
-    penalty,
-    x -> exactsolution(x[1]),
-) for ne in nelmts]
+rvals = [
+    measure_error(
+        ne,
+        solverbasis,
+        quad,
+        q1,
+        k1,
+        q2,
+        k2,
+        interfacepoint,
+        TL,
+        TR,
+        penalty,
+        x -> exactsolution(x[1]),
+    ) for ne in nelmts
+]
+
+err2 = [r[1] for r in rvals]
+flags2 = [r[2] for r in rvals]
 
 @test all(err2 .< 1e6eps())
+@test all(flags2)
 ################################################################################

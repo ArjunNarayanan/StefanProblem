@@ -225,5 +225,5 @@ df = DataFrame(NElmts = nelmts,linear = err1, quadratic = err2)
 
 foldername = "InteriorPenalty\\cylindrical_bc_tests\\"
 filename = foldername *"IP_convergence.csv"
-CSV.write(filename,df)
+# CSV.write(filename,df)
 ################################################################################

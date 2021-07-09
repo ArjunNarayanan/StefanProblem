@@ -1,3 +1,4 @@
+using LinearAlgebra
 using Test
 using PolynomialBasis
 using ImplicitDomainQuadrature
@@ -57,7 +58,7 @@ function measure_error(
         penalty,
         mesh,
     )
-    DG1D.assemble_boundary_rhs!(sysrhs, TL, TR, solverbasis, penalty, mesh)
+    DG1D.assemble_boundary_rhs!(sysrhs, k1, k2, TL, TR, solverbasis, penalty, mesh)
 
     matrix = DG1D.sparse_operator(sysmatrix, mesh, 1)
     rhs = DG1D.rhs_vector(sysrhs, mesh, 1)
@@ -68,7 +69,9 @@ function measure_error(
         uniform_mesh_L2_error(solution', exactsolution, solverbasis, quad, mesh)
     den = integral_norm_on_uniform_mesh(exactsolution, quad, mesh, 1)
 
-    return err[1] / den[1]
+    symmflag = issymmetric(matrix)
+
+    return err[1] / den[1], symmflag
 end
 
 
@@ -93,7 +96,7 @@ quad = tensor_product_quadrature(1, numqp)
 powers = [1, 2, 3, 4, 5]
 nelmts = 2 .^ powers
 
-err1 = [
+rvals = [
     measure_error(
         ne,
         solverbasis,
@@ -111,12 +114,15 @@ err1 = [
         x -> exactsolution(x[1]),
     ) for ne in nelmts
 ]
+err1 = [r[1] for r in rvals]
+flags1 = [r[2] for r in rvals]
 
 maxdomainsize = max(interfacepoint,1-interfacepoint)
 dx = maxdomainsize ./ nelmts
 
 rate1 = convergence_rate(dx, err1)
 @test all(rate1 .> 1.95)
+@test all(flags1)
 ################################################################################
 
 ################################################################################
@@ -125,7 +131,7 @@ solverbasis = LagrangeTensorProductBasis(1, solverorder)
 numqp = required_quadrature_order(solverorder)
 quad = tensor_product_quadrature(1, numqp)
 
-err2 = [measure_error(
+rvals = [measure_error(
     ne,
     solverbasis,
     quad,
@@ -142,7 +148,11 @@ err2 = [measure_error(
     x -> exactsolution(x[1]),
 ) for ne in nelmts]
 
+err2 = [r[1] for r in rvals]
+flags2 = [r[2] for r in rvals]
+
 @test all(err2 .< 1e6eps())
+@test all(flags2)
 ################################################################################
 
 
@@ -151,4 +161,4 @@ df = DataFrame(ElementSize = dx, linear = err1, quadratic = err2)
 
 foldername = "DG1D\\robin-interface-tests\\"
 filename = foldername*"robin-convergence.csv"
-CSV.write(filename,df)
+# CSV.write(filename,df)

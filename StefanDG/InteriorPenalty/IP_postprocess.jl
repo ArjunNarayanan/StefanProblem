@@ -26,3 +26,27 @@ function gradient_at_reference_points(
     end
     return interpolatedgradients
 end
+
+function interpolate_at_reference_points(
+    nodalvalues,
+    basis,
+    refpoints,
+    refcellids,
+    levelsetsign,
+    mesh,
+)
+
+    dim, numpts = size(refpoints)
+    @assert length(refcellids) == numpts
+
+    interpolatedvals = zeros(numpts)
+
+    for idx = 1:numpts
+        cellid = refcellids[idx]
+        nodeids = CutCellDG.nodal_connectivity(mesh, levelsetsign, cellid)
+        cellvals = nodalvalues[nodeids]
+
+        interpolatedvals[idx] = cellvals' * basis(refpoints[:, idx])
+    end
+    return interpolatedvals
+end

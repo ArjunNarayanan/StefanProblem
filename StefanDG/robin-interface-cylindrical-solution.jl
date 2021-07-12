@@ -24,7 +24,7 @@ end
 function coefficient_matrix(k2, lambda, R, b)
     m = zeros(3, 3)
     m[1, 1:3] = [1.0, -log(R), -1.0]
-    m[2, 1:3] = [0.0, k2 / R, -lambda]
+    m[2, 1:3] = [-lambda, k2 / R, 0.0]
     m[3, 1:3] = [0.0, log(b), 1.0]
 
     return m
@@ -70,13 +70,19 @@ function analytical_solution(r, solver::CylindricalSolver)
     )
 end
 
-function analytical_radial_derivative(r, q1, k1, q2, k2)
+function core_radial_derivative(r, q1, k1)
+    return -q1 / 2k1 * r
+end
+
+function rim_radial_derivative(r, q2, k2, A2)
+    return -q2 / 2k2 * r + A2 / r
+end
+
+function analytical_radial_derivative(r, q1, k1, q2, k2, A2)
     if r < R
-        Tr = -q1 / 2k1 * r
-        return Tr
+        return core_radial_derivative(r, q1, k1)
     else
-        Tr = -q2 / 2k2 * r + A2 / r
-        return Tr
+        return rim_radial_derivative(r, q2, k2, A2)
     end
 end
 

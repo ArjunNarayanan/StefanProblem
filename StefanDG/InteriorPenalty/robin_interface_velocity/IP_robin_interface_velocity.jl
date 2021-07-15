@@ -186,6 +186,13 @@ angularposition = angularposition[sortidx]
 closestpoints = closestpoints[:, sortidx]
 closestcellids = closestcellids[sortidx]
 
+normals =
+    -1.0CutCellDG.collect_normals_at_spatial_points(
+        closestpoints,
+        closestcellids,
+        levelset,
+    )
+
 ################################################################################
 closestrefpoints1 = CutCellDG.map_to_reference_on_merged_mesh(
     closestpoints,
@@ -241,7 +248,37 @@ error2 = abs.(velocity2 .- exactvelocity) ./ abs(exactvelocity)
 meanerror = abs.(meanvelocity .- exactvelocity) ./ abs(exactvelocity)
 ################################################################################
 
-# using Plots
-# plot(meanerror)
+################################################################################
+grads1 = InteriorPenalty.gradient_at_reference_points(
+    nodalsolution,
+    solverbasis,
+    closestrefpoints1,
+    closestcellids,
+    +1,
+    mergedmesh,
+)
+normalflux1 = k1 * vec(mapslices(sum, grads1 .* normals, dims = 1))
+################################################################################
+
+################################################################################
+grads2 = InteriorPenalty.gradient_at_reference_points(
+    nodalsolution,
+    solverbasis,
+    closestrefpoints2,
+    closestcellids,
+    -1,
+    mergedmesh,
+)
+normalflux2 = k2 * vec(mapslices(sum, grads2 .* normals, dims = 1))
+################################################################################
+
+################################################################################
+gvelocity = normalflux2 - normalflux1
+gerror = abs.(gvelocity .- exactvelocity) ./ abs(exactvelocity)
+################################################################################
+
+using Plots
+plot(gerror)
+plot(error1)
 
 plot_interface_error(angularposition, error1, error2)

@@ -277,8 +277,8 @@ gvelocity = normalflux2 - normalflux1
 gerror = abs.(gvelocity .- exactvelocity) ./ abs(exactvelocity)
 ################################################################################
 
-using Plots
-plot(gerror)
-plot(error1)
-
-plot_interface_error(angularposition, error1, error2)
+# using Plots
+# plot(gerror)
+# plot(error1)
+#
+# plot_interface_error(angularposition, error1, error2)
